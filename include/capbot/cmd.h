@@ -1,5 +1,5 @@
-#ifndef CMD_HPP
-#define CMD_HPP
+#ifndef CMD_H
+#define CMD_H
 
 #include <dpp/dpp.h>
 #include <dpp/fmt/format.h>

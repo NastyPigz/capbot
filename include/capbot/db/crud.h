@@ -1,5 +1,5 @@
-#ifndef CRUD_HPP
-#define CRUD_HPP
+#ifndef CRUD_H
+#define CRUD_H
 // deta stuff here
 // https://database.deta.sh/v1/{project_id}/{base_name}
 // header: 'X-API-Key: a0abcyxz_aSecretValue'

@@ -1,11 +1,11 @@
-#ifndef CONFIG_HPP
-#define CONFIG_HPP
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include <dpp/dpp.h>
 #include <dpp/fmt/format.h>
 #include <map>
 #include <iostream>
-#include "cmd.hpp"
+#include "cmd.h"
 // configuration file... including all the commands
 
 void ping(dpp::cluster &bot, const dpp::slashcommand_t &ev);

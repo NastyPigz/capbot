@@ -1,4 +1,4 @@
-#include "capbot/cmd.hpp"
+#include "capbot/cmd.h"
 
 dpp::message ephmsg(std::string content) {
     dpp::message m(content);

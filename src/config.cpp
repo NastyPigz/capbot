@@ -1,6 +1,6 @@
 // configuration file... including all the 
-#include "capbot/cmd.hpp"
-#include "capbot/config.hpp"
+#include "capbot/cmd.h"
+#include "capbot/config.h"
 
 void ping(dpp::cluster &bot, const dpp::slashcommand_t &ev) {
     auto start = std::chrono::high_resolution_clock::now();
