@@ -9,8 +9,8 @@
 #include <map>
 #include <utility>
 #include <chrono>
-#include "cmd.hpp"
-#include "config.hpp"
+#include "capbot/cmd.hpp"
+#include "capbot/config.hpp"
 
 // void ls_recursive(const std::filesystem::path& path) {
 //     for(const auto& p: std::filesystem::recursive_directory_iterator(path)) {

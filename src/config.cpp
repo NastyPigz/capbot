@@ -1,4 +1,6 @@
-// configuration file... including all the commands
+// configuration file... including all the 
+#include "capbot/cmd.hpp"
+#include "capbot/config.hpp"
 
 void ping(dpp::cluster &bot, const dpp::slashcommand_t &ev) {
     auto start = std::chrono::high_resolution_clock::now();
@@ -20,14 +22,3 @@ void help(dpp::cluster &bot, const dpp::slashcommand_t &ev) {
 void think(dpp::cluster &bot, const dpp::slashcommand_t &ev) {
     ev.thinking(true);
 }
-
-std::map<std::string, command_definition> cmds = {
-    { "ping", { "A ping command", ping }},
-    { "help", {
-        "A help command", help , { 
-            { dpp::command_option(dpp::co_string, "term", "Help term", false) },
-        }
-    }},
-    { "uptime", { "An uptime command", uptime }},
-    { "think", { "think forever", think }},
-};
