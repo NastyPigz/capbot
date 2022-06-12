@@ -1,4 +1,13 @@
-// #include "capbot/db/crud.h"
+#include "capbot/db/crud.h"
+
+std::string put_str(std::vector<json> items) {
+    std::string result = "{\"items\":[";
+    for (auto &i: items) {
+        result += i.dump();
+    }
+    result += "]}";
+    return result;
+};
 
 // class Database {
 //     std::string url;
