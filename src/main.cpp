@@ -11,6 +11,7 @@
 #include <chrono>
 #include "capbot/cmd.h"
 #include "capbot/config.h"
+#include "capbot/db/crud.h"
 
 // void ls_recursive(const std::filesystem::path& path) {
 //     for(const auto& p: std::filesystem::recursive_directory_iterator(path)) {
@@ -36,12 +37,20 @@ int main() {
     // comment this out for faster recompile
     // ls_recursive("./src/commands");
 
-	if (!getenv("DISCORD_TOKEN")) {
-		std::cout << "Could not find the DISCORD_TOKEN environment variable.\n";
+	if (!getenv("DISCORD_TOKEN") || !getenv("PROJECT_KEY") || !getenv("PROJECT_ID")) {
+		std::cout << "Could not find the DISCORD_TOKEN or PROJECT_KEY or PROJECT_ID environment variable.\n";
 		return 1;
 	}
 
     dpp::cluster bot(getenv("DISCORD_TOKEN"), dpp::i_default_intents | dpp::i_message_content);
+
+    Database db(getenv("PROJECT_KEY"), getenv("RPOJECT_ID"), "gnc", bot);
+    db.put("{\"items\":[{\"key\":\"bastard1\",\"field1\":\"value1\"}, {\"key\":\"bastard2\",\"field1\":\"value2\"}]}");
+    db.post("{\"item\":{\"key\":\"bastard3\", \"field1\":\"value3\"}}");
+    db.get("bastard1");
+    db.del("bastard1");
+    db.del("bastard2");
+    db.del("bastard3");
 
     bot.on_log(dpp::utility::cout_logger());
 
