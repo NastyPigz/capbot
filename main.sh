@@ -3,8 +3,8 @@
 export $(cat .env | xargs)
 # -g -O0 for debugging with gdb
 {
-    find . -name *.cpp | xargs echo
-    find . -name *.cpp | xargs clang++ -std=c++17 -o bot -Wall -I include -ldpp
+    find ./src -name *.cpp | xargs echo
+    find ./src -name *.cpp | xargs clang++ -std=c++17 -o bot -Wall -I include -ldpp
 } && {
     ./bot
 }

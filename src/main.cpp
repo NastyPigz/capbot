@@ -48,7 +48,7 @@ int main() {
     std::string prokey, projid;
     prokey = getenv("PROJECT_KEY");
     projid = getenv("PROJECT_ID");
-    Database db(prokey, projid, "gnc", bot);
+    Db db(prokey, projid, "gnc", bot);
     db.put("{\"items\":[{\"key\":\"bastard1\",\"field1\":\"value1\"}, {\"key\":\"bastard2\",\"field1\":\"value2\"}]}");
     db.post("{\"item\":{\"key\":\"bastard3\", \"field1\":\"value3\"}}");
     db.get("bastard1");
