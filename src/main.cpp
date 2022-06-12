@@ -44,7 +44,11 @@ int main() {
 
     dpp::cluster bot(getenv("DISCORD_TOKEN"), dpp::i_default_intents | dpp::i_message_content);
 
-    Database db(getenv("PROJECT_KEY"), getenv("RPOJECT_ID"), "gnc", bot);
+    // Database db(getenv("PROJECT_KEY"), getenv("RPOJECT_ID"), "gnc", bot);
+    std::string prokey, projid;
+    prokey = getenv("PROJECT_KEY");
+    projid = getenv("PROJECT_ID");
+    Database db(prokey, projid, "gnc", bot);
     db.put("{\"items\":[{\"key\":\"bastard1\",\"field1\":\"value1\"}, {\"key\":\"bastard2\",\"field1\":\"value2\"}]}");
     db.post("{\"item\":{\"key\":\"bastard3\", \"field1\":\"value3\"}}");
     db.get("bastard1");

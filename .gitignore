@@ -1,4 +1,6 @@
 bot
 .env
 .vscode
-libdpp.deb
+
+# make
+build
