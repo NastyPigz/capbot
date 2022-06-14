@@ -2,6 +2,7 @@ bot
 .env
 .vscode
 .DS_STORE
+main.sh
 
 # make
 build

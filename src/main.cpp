@@ -32,10 +32,10 @@ void join(const std::vector<std::string>& v, char c, std::string& s) {
     }
 }
 
-
 int main() {
     // comment this out for faster recompile
     // ls_recursive("./src/commands");
+    initAllItems();
 
 	if (!getenv("DISCORD_TOKEN") || !getenv("PROJECT_KEY") || !getenv("PROJECT_ID")) {
 		std::cout << "Could not find the DISCORD_TOKEN or PROJECT_KEY or PROJECT_ID environment variable.\n";
@@ -49,12 +49,38 @@ int main() {
     prokey = getenv("PROJECT_KEY");
     projid = getenv("PROJECT_ID");
     Db db(prokey, projid, "gnc", bot);
-    db.put("{\"items\":[{\"key\":\"bastard1\",\"field1\":\"value1\"}, {\"key\":\"bastard2\",\"field1\":\"value2\"}]}");
-    db.post("{\"item\":{\"key\":\"bastard3\", \"field1\":\"value3\"}}");
-    db.get("bastard1");
-    db.del("bastard1");
-    db.del("bastard2");
-    db.del("bastard3");
+    // DB Tests
+    // db.put({
+    //     {
+    //         {"key", "bastard1"},
+    //         {"field1", "value1"}
+    //     },
+    //     {
+    //         {"key", "bastard2"},
+    //         {"field1", "value2"}
+    //     }
+    // });
+    // db.post({
+    //     {"key", "bastard3"},
+    //     {"field1", "value3"}
+    // });
+    // db.patch("bastard2", {
+    //     {"set", {
+    //         {"field1", "value4"}
+    //     }}
+    // });
+    // db.get("bastard1");
+    // db.get("bastard2");
+    // db.query(R"(
+    //     [
+    //         {
+    //             "field1": "value3"
+    //         }
+    //     ]
+    // )"_json);
+    // db.del("bastard1");
+    // db.del("bastard2");
+    // db.del("bastard3");
 
     bot.on_log(dpp::utility::cout_logger());
 
@@ -76,10 +102,10 @@ int main() {
         std::cout << "Logged in as " << bot.me.username << "!\n";
     });
 
-    bot.on_slashcommand([&bot](const dpp::slashcommand_t& event) {
+    bot.on_slashcommand([&bot, &db](const dpp::slashcommand_t& event) {
         std::string name = event.command.get_command_name();
         if (cmds.find(name) != cmds.end()) {
-            cmds.at(name).function(bot, event);
+            cmds.at(name).function(CmdCtx{bot, db}, event);
         }
     });
 
