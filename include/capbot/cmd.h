@@ -4,8 +4,14 @@
 #include <dpp/dpp.h>
 #include <dpp/fmt/format.h>
 #include <iostream>
+#include "db/crud.h"
 
-using command_function = std::function<void(dpp::cluster&, const dpp::slashcommand_t&)>;
+struct CmdCtx {
+    dpp::cluster &bot;
+    Db &db;
+};
+
+using command_function = std::function<void(CmdCtx, const dpp::slashcommand_t &ev)>;
 
 struct command_definition {
 	std::string description;
@@ -14,4 +20,5 @@ struct command_definition {
 };
 
 dpp::message ephmsg(std::string content);
+
 #endif

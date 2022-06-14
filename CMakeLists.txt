@@ -4,8 +4,13 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(BOT_NAME "capbot")
 
 project(${BOT_NAME})
-aux_source_directory("src" coresrc)
-add_executable(${BOT_NAME} ${coresrc})
+# aux_source_directory("src" coresrc)
+# aux_source_directory("src/db" dbsrc)
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp")
+# message(STATUS "src: ${coresrc}\nsrc/db: ${dbsrc}")
+message(STATUS "src: ${SOURCE_FILES}")
+# add_executable(${BOT_NAME} ${coresrc} ${dbsrc})
+add_executable(${BOT_NAME} ${SOURCE_FILES})
 
 string(ASCII 27 Esc)
 
