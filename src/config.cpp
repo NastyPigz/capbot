@@ -5,7 +5,7 @@
 // only allow 100 commands
 // 25 subcommands
 
-void initAllItems() {
+void init_all_items() {
     for (auto& el : shop_items.items()) {
         shop_items_default[el.key()] = 0;
     }
@@ -37,7 +37,7 @@ void think(CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void _register(CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {  
-        ctx.db.post({
+        ctx.maindb.post({
             {"key", std::to_string(ev.command.member.user_id)},
             {"bal", 0},
             {"bank", 0},
@@ -61,7 +61,7 @@ void _register(CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void unregister(CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-        ctx.db.del(std::to_string(ev.command.usr.id), [ev](auto _) {
+        ctx.maindb.del(std::to_string(ev.command.usr.id), [ev](auto _) {
             ev.edit_response(ephmsg("Unregistered."));
         });
     });
@@ -69,7 +69,7 @@ void unregister(CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void balance(CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-        ctx.db.get(std::to_string(ev.command.usr.id), [ev](const dpp::http_request_completion_t &evt) {
+        ctx.maindb.get(std::to_string(ev.command.usr.id), [ev](const dpp::http_request_completion_t &evt) {
             if (evt.status == 200) {
                 json usr_data = json::parse(evt.body);
                 ev.edit_response(dpp::message().add_embed(dpp::embed()
@@ -103,7 +103,7 @@ void beg(CmdCtx ctx, const dpp::slashcommand_t &ev) {
         // add multiplier later
         std::uniform_int_distribution<> distr(1, 10);
         int amt = distr(gen);
-        ctx.db.patch(std::to_string(ev.command.usr.id), {
+        ctx.maindb.patch(std::to_string(ev.command.usr.id), {
             {"increment", {
                 {"bal", amt}
             }}

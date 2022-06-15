@@ -12,6 +12,7 @@
 #include "capbot/cmd.h"
 #include "capbot/config.h"
 #include "capbot/db/crud.h"
+#include "capbot/cooldown.h"
 
 // void ls_recursive(const std::filesystem::path& path) {
 //     for(const auto& p: std::filesystem::recursive_directory_iterator(path)) {
@@ -35,7 +36,7 @@ void join(const std::vector<std::string>& v, char c, std::string& s) {
 int main() {
     // comment this out for faster recompile
     // ls_recursive("./src/commands");
-    initAllItems();
+    init_all_items();
 
 	if (!getenv("DISCORD_TOKEN") || !getenv("PROJECT_KEY") || !getenv("PROJECT_ID")) {
 		std::cout << "Could not find the DISCORD_TOKEN or PROJECT_KEY or PROJECT_ID environment variable.\n";
@@ -44,45 +45,14 @@ int main() {
 
     dpp::cluster bot(getenv("DISCORD_TOKEN"), dpp::i_default_intents | dpp::i_message_content);
 
-    dpp::cache<std::map<dpp::snowflake, std::map<std::string, int>>> cooldown_cache();
-
     // Database db(getenv("PROJECT_KEY"), getenv("RPOJECT_ID"), "gnc", bot);
     std::string prokey, projid;
     prokey = getenv("PROJECT_KEY");
     projid = getenv("PROJECT_ID");
-    Db db(prokey, projid, "currency", bot);
-    // DB Tests
-    // db.put({
-    //     {
-    //         {"key", "bastard1"},
-    //         {"field1", "value1"}
-    //     },
-    //     {
-    //         {"key", "bastard2"},
-    //         {"field1", "value2"}
-    //     }
-    // });
-    // db.post({
-    //     {"key", "bastard3"},
-    //     {"field1", "value3"}
-    // });
-    // db.patch("bastard2", {
-    //     {"set", {
-    //         {"field1", "value4"}
-    //     }}
-    // });
-    // db.get("bastard1");
-    // db.get("bastard2");
-    // db.query(R"(
-    //     [
-    //         {
-    //             "field1": "value3"
-    //         }
-    //     ]
-    // )"_json);
-    // db.del("bastard1");
-    // db.del("bastard2");
-    // db.del("bastard3");
+    Db maindb(prokey, projid, "currency", bot);
+    // db_tests(maindb);
+
+    CooldownManager cooldowns;
 
     bot.on_log(dpp::utility::cout_logger());
 
@@ -104,10 +74,16 @@ int main() {
         std::cout << "Logged in as " << bot.me.username << "!\n";
     });
 
-    bot.on_slashcommand([&bot, &db](const dpp::slashcommand_t& event) {
+    bot.on_slashcommand([&bot, &maindb, &cooldowns](const dpp::slashcommand_t& event) {
         std::string name = event.command.get_command_name();
         if (cmds.find(name) != cmds.end()) {
-            cmds.at(name).function(CmdCtx{bot, db}, event);
+            int wait_time = cooldowns.seconds_to_wait(event.command.usr.id, name);
+            if (wait_time <= 0) {
+                cooldowns.trigger(event.command.usr.id, name);
+                cmds.at(name).function(CmdCtx{bot, maindb}, event);
+            } else {
+                event.reply(ephmsg(fmt::format("Woah, slow down! Next execution is in {}", wait_time)));
+            }
         }
     });
 
