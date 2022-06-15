@@ -44,11 +44,13 @@ int main() {
 
     dpp::cluster bot(getenv("DISCORD_TOKEN"), dpp::i_default_intents | dpp::i_message_content);
 
+    dpp::cache<std::map<dpp::snowflake, std::map<std::string, int>>> cooldown_cache();
+
     // Database db(getenv("PROJECT_KEY"), getenv("RPOJECT_ID"), "gnc", bot);
     std::string prokey, projid;
     prokey = getenv("PROJECT_KEY");
     projid = getenv("PROJECT_ID");
-    Db db(prokey, projid, "gnc", bot);
+    Db db(prokey, projid, "currency", bot);
     // DB Tests
     // db.put({
     //     {

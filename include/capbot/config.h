@@ -1,13 +1,15 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+#define EPH_OR_NOT false
 
 #include <dpp/dpp.h>
 #include <dpp/fmt/format.h>
 #include <map>
 #include <iostream>
-#include "cmd.h"
 #include <iomanip>
 #include <locale>
+#include <random>
+#include "cmd.h"
 
 template<class T>
 std::string FormatWithCommas(T value) {
@@ -16,6 +18,7 @@ std::string FormatWithCommas(T value) {
     ss << std::fixed << value;
     return ss.str();
 }
+
 // configuration file... including all the commands
 
 void ping(CmdCtx ctx, const dpp::slashcommand_t &ev);
@@ -32,8 +35,12 @@ void unregister(CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void balance(CmdCtx ctx, const dpp::slashcommand_t &ev);
 
+void beg(CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void fail(CmdCtx ctx, const dpp::slashcommand_t &ev);
+
 // max commands is 100, 25 subcommands, 25 subcommand groups
-inline std::map<std::string, command_definition> cmds = {
+inline const std::map<std::string, command_definition> cmds = {
     { "ping", { "A ping command", ping }},
     { "help", {
         "A help command", help , { 
@@ -42,9 +49,11 @@ inline std::map<std::string, command_definition> cmds = {
     }},
     { "uptime", { "An uptime command", uptime }},
     { "think", { "think forever (15 minutes)", think }},
+    { "fail", { "This application did not respond", fail }},
     { "register", { "register an account for capbot", _register }},
     { "unregister", { "unregister your account for capbot", unregister }},
-    { "balance", { "Check your balance", balance }}
+    { "balance", { "Check your balance", balance }},
+    { "beg", { "pls give me money I'm begging you", beg }}
 };
 
 void initAllItems();
