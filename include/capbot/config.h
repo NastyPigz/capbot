@@ -1,13 +1,15 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+#define EPH_OR_NOT false
 
 #include <dpp/dpp.h>
 #include <dpp/fmt/format.h>
 #include <map>
 #include <iostream>
-#include "cmd.h"
 #include <iomanip>
 #include <locale>
+#include <random>
+#include "cmd.h"
 
 template<class T>
 std::string FormatWithCommas(T value) {
@@ -16,6 +18,9 @@ std::string FormatWithCommas(T value) {
     ss << std::fixed << value;
     return ss.str();
 }
+
+void init_all_items();
+
 // configuration file... including all the commands
 
 void ping(CmdCtx ctx, const dpp::slashcommand_t &ev);
@@ -32,22 +37,26 @@ void unregister(CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void balance(CmdCtx ctx, const dpp::slashcommand_t &ev);
 
+void beg(CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void fail(CmdCtx ctx, const dpp::slashcommand_t &ev);
+
 // max commands is 100, 25 subcommands, 25 subcommand groups
-inline std::map<std::string, command_definition> cmds = {
-    { "ping", { "A ping command", ping }},
+inline const std::map<std::string, command_definition> cmds = {
+    { "ping", { "A ping command", ping, 0 }},
     { "help", {
-        "A help command", help , { 
+        "A help command", help, 0, { 
             { dpp::command_option(dpp::co_string, "term", "Help term", false) },
         }
     }},
-    { "uptime", { "An uptime command", uptime }},
-    { "think", { "think forever (15 minutes)", think }},
-    { "register", { "register an account for capbot", _register }},
-    { "unregister", { "unregister your account for capbot", unregister }},
-    { "balance", { "Check your balance", balance }}
+    { "uptime", { "An uptime command", uptime, 0 }},
+    { "think", { "think forever (15 minutes)", think, 15 * 60 }},
+    { "fail", { "This application did not respond", fail, 1 * 60 }},
+    { "register", { "register an account for capbot", _register, 60 * 60 }},
+    { "unregister", { "unregister your account for capbot", unregister, 2 * 60 * 60 }},
+    { "balance", { "Check your balance", balance, 1 }},
+    { "beg", { "pls give me money I'm begging you", beg, 15 }}
 };
-
-void initAllItems();
 
 inline json shop_items = R"({
     "horrorse_celery":{

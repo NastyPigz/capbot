@@ -8,7 +8,7 @@
 
 struct CmdCtx {
     dpp::cluster &bot;
-    Db &db;
+    Db &maindb;
 };
 
 using command_function = std::function<void(CmdCtx, const dpp::slashcommand_t &ev)>;
@@ -16,6 +16,7 @@ using command_function = std::function<void(CmdCtx, const dpp::slashcommand_t &e
 struct command_definition {
 	std::string description;
 	command_function function;
+	int cooldown;
 	std::vector<dpp::command_option> parameters = {};
 };
 

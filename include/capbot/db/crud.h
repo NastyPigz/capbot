@@ -9,10 +9,6 @@
 
 using handle_function = std::function<void(const dpp::http_request_completion_t&)>;
 
-// void dummy_handle_function(const dpp::http_request_completion_t &ev) {
-//     return;
-// }
-
 class Db {
     std::string url;
     dpp::cluster* client;
