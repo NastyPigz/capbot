@@ -240,3 +240,15 @@ void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 void fail(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
    // hehehehaw
 }
+
+void test(const CmdCtx ctx, const dpp::slashcommand_t &ev) { // DOESNT WORK
+    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        int64_t test = std::get<int64_t>(ev.get_parameter("test"));
+        if (test == 1) {
+            ctx.cooldowns.reset(ev.command.usr.id, "test");
+            ev.edit_response(ephmsg("Reset cooldown."));
+        } else {
+            ev.edit_response(ephmsg("Did nothing."));
+        }
+    });
+}
