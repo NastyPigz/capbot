@@ -23,23 +23,27 @@ void init_all_items();
 
 // configuration file... including all the commands
 
-void ping(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void ping(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void uptime(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void uptime(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void help(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void help(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void think(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void think(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void _register(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void _register(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void unregister(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void unregister(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void balance(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void beg(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void beg(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void fail(CmdCtx ctx, const dpp::slashcommand_t &ev);
+void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void fail(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 // max commands is 100, 25 subcommands, 25 subcommand groups
 inline const std::map<std::string, command_definition> cmds = {
@@ -54,11 +58,29 @@ inline const std::map<std::string, command_definition> cmds = {
     { "fail", { "This application did not respond", fail, 1 * 60 }},
     { "register", { "register an account for capbot", _register, 60 * 60 }},
     { "unregister", { "unregister your account for capbot", unregister, 2 * 60 * 60 }},
-    { "balance", { "Check your balance", balance, 1 }},
-    { "beg", { "pls give me money I'm begging you", beg, 15 }}
+    { "balance", {
+        "Check your balance", balance, 1, {
+            { dpp::command_option(dpp::co_user, "user", "Target user's balance", false) },
+        }
+    }},
+    { "beg", { "pls give me money I'm begging you", beg, 15 }},
+    { "deposit", {
+        "place money into your bank", deposit, 5, {
+            {
+                dpp::command_option(dpp::co_integer, "amount", "Amount you want to deposit (-1 for max amount /all)", true)
+            }
+        }
+    }},
+    { "withdraw", {
+        "withdraw money from your bank", withdraw, 5, {
+            {
+                dpp::command_option(dpp::co_integer, "amount", "Amount you want to withdraw (-1 for max amount /all)", true)
+            }
+        }
+    }}
 };
 
-inline json shop_items = R"({
+inline const json shop_items = R"({
     "horrorse_celery":{
         "name": ["horrorse", "celery", "hc","horse"],
         "display": "<:HorrorsesCelery:859085174650437682> Horrorse's Celery",
@@ -184,7 +206,7 @@ inline json shop_items = R"({
 
 inline json shop_items_default;
 
-inline json badge_items = R"({
+inline const json badge_items = R"({
     "BETA_tester": {
         "thumbnail": "<:betatester:834935585952497685>",
         "description": "A badge for BETA testers"

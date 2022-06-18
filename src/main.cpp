@@ -34,8 +34,6 @@ void join(const std::vector<std::string>& v, char c, std::string& s) {
 }
 
 int main() {
-    // comment this out for faster recompile
-    // ls_recursive("./src/commands");
     init_all_items();
 
 	if (!getenv("DISCORD_TOKEN") || !getenv("PROJECT_KEY") || !getenv("PROJECT_ID")) {

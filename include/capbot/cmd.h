@@ -8,18 +8,18 @@
 
 struct CmdCtx {
     dpp::cluster &bot;
-    Db &maindb;
+    const Db &maindb;
 };
 
-using command_function = std::function<void(CmdCtx, const dpp::slashcommand_t &ev)>;
+using command_function = const std::function<void(const CmdCtx, const dpp::slashcommand_t &ev)>;
 
 struct command_definition {
-	std::string description;
-	command_function function;
-	int cooldown;
-	std::vector<dpp::command_option> parameters = {};
+	const std::string description;
+	const command_function function;
+	const int cooldown;
+	const std::vector<dpp::command_option> parameters = {};
 };
 
-dpp::message ephmsg(std::string content);
+dpp::message ephmsg(const std::string content);
 
 #endif

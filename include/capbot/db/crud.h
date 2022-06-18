@@ -6,26 +6,27 @@
 #include <dpp/dpp.h>
 #include <dpp/nlohmann/json.hpp>
 #include <dpp/fmt/format.h>
+#define DEFAULT_FUNCTION [](auto e){}
 
 using handle_function = std::function<void(const dpp::http_request_completion_t&)>;
 
 class Db {
-    std::string url;
+    const std::string url;
     dpp::cluster* client;
-    std::multimap<std::string, std::string> headers;
+    const std::multimap<std::string, std::string> headers;
 public:
     Db(std::string project_key, std::string project_id, std::string base, dpp::cluster &client);
     
-    void put(json items, handle_function fn = [](auto e){});
+    void put(json items, handle_function fn = DEFAULT_FUNCTION) const;
 
-    void get(std::string key, handle_function fn = [](auto e){});
+    void get(std::string key, handle_function fn = DEFAULT_FUNCTION) const;
 
-    void del(std::string key, handle_function fn = [](auto e){});
+    void del(std::string key, handle_function fn = DEFAULT_FUNCTION) const;
 
-    void post(json item, handle_function fn = [](auto e){});
+    void post(json item, handle_function fn = DEFAULT_FUNCTION) const;
 
-    void patch(std::string key, json item, handle_function fn = [](auto e){});
+    void patch(std::string key, json item, handle_function fn = DEFAULT_FUNCTION) const;
     
-    void query(json query, handle_function fn = [](auto e){}, unsigned int limit = 0, std::string last = "");
+    void query(json query, handle_function fn = DEFAULT_FUNCTION, unsigned int limit = 0, std::string last = "") const;
 };
 #endif
