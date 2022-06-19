@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef CONFIG_H_
+#define CONFIG_H_
 #define EPH_OR_NOT false
 
 #include <dpp/dpp.h>

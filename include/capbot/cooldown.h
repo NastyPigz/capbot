@@ -1,5 +1,5 @@
-#ifndef COOLDOWN_H
-#define COOLDOWN_H
+#ifndef COOLDOWN_H_
+#define COOLDOWN_H_
 #include <iostream>
 #include <map>
 #include <dpp/dpp.h>
