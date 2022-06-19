@@ -36,12 +36,12 @@ void join(const std::vector<std::string>& v, char c, std::string& s) {
 int main() {
     init_all_items();
 
-	if (!getenv("DISCORD_TEST_TOKEN") || !getenv("PROJECT_KEY") || !getenv("PROJECT_ID")) {
+	if (!getenv("DISCORD_TOKEN") || !getenv("PROJECT_KEY") || !getenv("PROJECT_ID")) {
 		std::cout << "Could not find the DISCORD_TOKEN or PROJECT_KEY or PROJECT_ID environment variable.\n";
 		return 1;
 	}
 
-    dpp::cluster bot(getenv("DISCORD_TEST_TOKEN"), dpp::i_default_intents | dpp::i_message_content);
+    dpp::cluster bot(getenv("DISCORD_TOKEN"), dpp::i_default_intents | dpp::i_message_content);
 
     // Database db(getenv("PROJECT_KEY"), getenv("RPOJECT_ID"), "gnc", bot);
     std::string prokey, projid;
