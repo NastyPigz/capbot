@@ -200,6 +200,7 @@ void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
         int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
         if (amount <= 0 && amount != -1) {
+            ctx.cooldowns.reset_trigger(ev.command.usr.id, "withdraw");
             ev.edit_response(ephmsg("You cannot withdraw \"no\" coins."));
             return;
         }

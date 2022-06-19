@@ -4,7 +4,6 @@
 #include <map>
 #include <dpp/dpp.h>
 #include <dpp/nlohmann/json.hpp>
-#include "config.h"
 
 class CooldownManager {
 	std::shared_mutex cooldown_mutex;
@@ -19,5 +18,7 @@ public:
 	bool can_trigger(dpp::snowflake id, std::string command_name);
 
 	int seconds_to_wait(dpp::snowflake id, std::string command_name);
+
+	void reset_trigger(dpp::snowflake id, std::string command_name);
 };
 #endif

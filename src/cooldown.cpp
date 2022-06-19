@@ -1,3 +1,4 @@
+#include "capbot/config.h"
 #include "capbot/cooldown.h"
 
 CooldownManager::CooldownManager():
@@ -18,6 +19,17 @@ void CooldownManager::trigger(dpp::snowflake id, std::string command_name) {
         };
     } else {
         (*cache_map)[id][command_name] = tm;
+    }
+}
+
+void CooldownManager::reset_trigger(dpp::snowflake id, std::string command_name) {
+    // // this cannot error unless someone pass in smth stupid
+    // time_t tm = time(NULL) - cmds.at(command_name).cooldown * 2;
+    std::unique_lock l(cooldown_mutex);
+    std::unordered_map<dpp::snowflake, std::unordered_map<std::string, time_t>>::const_iterator existing = cache_map->find(id);
+    if (existing != cache_map->end()) {
+        // don't reset cooldown if it doesn't exist. This is very unlikely to be called.
+        (*cache_map)[id].erase(command_name);
     }
 }
 
