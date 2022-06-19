@@ -5,10 +5,12 @@
 #include <dpp/fmt/format.h>
 #include <iostream>
 #include "db/crud.h"
+#include "cooldown.h"
 
 struct CmdCtx {
     dpp::cluster &bot;
     const Db &maindb;
+	CooldownManager &cooldowns;
 };
 
 using command_function = const std::function<void(const CmdCtx, const dpp::slashcommand_t &ev)>;

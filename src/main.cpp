@@ -78,7 +78,7 @@ int main() {
             int wait_time = cooldowns.seconds_to_wait(event.command.usr.id, name);
             if (wait_time <= 0) {
                 cooldowns.trigger(event.command.usr.id, name);
-                cmds.at(name).function(CmdCtx{bot, maindb}, event);
+                cmds.at(name).function(CmdCtx{bot, maindb, cooldowns}, event);
             } else {
                 event.reply(ephmsg(fmt::format("Woah, slow down! Next execution is in {}", wait_time)));
             }

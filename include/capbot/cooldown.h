@@ -4,17 +4,20 @@
 #include <map>
 #include <dpp/dpp.h>
 #include <dpp/nlohmann/json.hpp>
-#include "config.h"
+
+typedef std::unordered_map<dpp::snowflake, std::unordered_map<std::string, time_t>> cooldown_cache;
 
 class CooldownManager {
 	std::shared_mutex cooldown_mutex;
-	std::unordered_map<dpp::snowflake, std::unordered_map<std::string, time_t>> *cache_map;
+	cooldown_cache *cache_map;
 public:
 	CooldownManager();
 
 	~CooldownManager();
 
 	void trigger(dpp::snowflake id, std::string command_name);
+
+	void reset(dpp::snowflake id, std::string command_name);
 
 	bool can_trigger(dpp::snowflake id, std::string command_name);
 
