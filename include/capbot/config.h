@@ -43,16 +43,19 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
+void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
 void fail(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 // max commands is 100, 25 subcommands, 25 subcommand groups
 inline const std::map<std::string, command_definition> cmds = {
     { "ping", { "A ping command", ping, 0 }},
-    { "help", {
-        "A help command", help, 0, { 
-            { dpp::command_option(dpp::co_string, "term", "Help term", false) },
-        }
-    }},
+    /* help is literally useless */
+    // { "help", {
+    //     "A help command", help, 0, { 
+    //         { dpp::command_option(dpp::co_string, "term", "Help term", false) },
+    //     }
+    // }},
     { "uptime", { "An uptime command", uptime, 0 }},
     { "think", { "think forever (15 minutes)", think, 15 * 60 }},
     { "fail", { "This application did not respond", fail, 1 * 60 }},
@@ -75,6 +78,16 @@ inline const std::map<std::string, command_definition> cmds = {
         "withdraw money from your bank", withdraw, 5, {
             {
                 dpp::command_option(dpp::co_integer, "amount", "Amount you want to withdraw (-1 for max amount /all)", true)
+            }
+        }
+    }},
+    { "inventory", {
+        "views your current inventory", inventory, 1, {
+            {
+                dpp::command_option(dpp::co_integer, "page", "Page of inventory", false)
+            },
+            {
+                dpp::command_option(dpp::co_user, "user", "Target user's inventory", false)
             }
         }
     }},

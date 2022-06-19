@@ -70,7 +70,7 @@ void unregister(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
         if (ev.command.get_command_interaction().options.size() == 0) {
-            ctx.maindb.get(std::to_string(ev.command.usr.id), [ev](const dpp::http_request_completion_t &evt) {
+            ctx.maindb.get(std::to_string(ev.command.usr.id), [ctx, ev](const dpp::http_request_completion_t &evt) {
                 if (evt.status == 200) {
                     json usr_data = json::parse(evt.body);
                     ev.edit_response(dpp::message().add_embed(dpp::embed()
@@ -91,6 +91,7 @@ void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                         )
                     ));
                 } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "balance");
                     ev.edit_response(ephmsg("You are not registered yet!"));
                 }
             });
@@ -99,7 +100,7 @@ void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
             ctx.bot.user_get(user_id, [ctx, ev](const dpp::confirmation_callback_t &callback) {
                 dpp::user_identified user = std::get<dpp::user_identified>(callback.value);
                 std::string username = user.username;
-                ctx.maindb.get(std::to_string(user.id), [ev, username](const dpp::http_request_completion_t &evt) {
+                ctx.maindb.get(std::to_string(user.id), [ctx, ev, username](const dpp::http_request_completion_t &evt) {
                     if (evt.status == 200) {
                         json usr_data = json::parse(evt.body);
                         ev.edit_response(dpp::message().add_embed(dpp::embed()
@@ -120,6 +121,7 @@ void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                             )
                         ));
                     } else {
+                        ctx.cooldowns.reset_trigger(ev.command.usr.id, "balance");
                         ev.edit_response(ephmsg(fmt::format("{} has not registered yet!", username)));
                     }
                 });
@@ -139,13 +141,14 @@ void beg(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
             {"increment", {
                 {"bal", amt}
             }}
-        }, [ev, amt](const dpp::http_request_completion_t &evt) {
+        }, [ctx, ev, amt](const dpp::http_request_completion_t &evt) {
             if (evt.status == 200) {
                 ev.edit_response(ephmsg("").add_embed(dpp::embed()
                     .set_title("CapitalismBot walked out of a shop and gave you a few changes!")
                     .set_description(fmt::format("You received: {}", FormatWithCommas(amt)))
                 ));
             } else {
+                ctx.cooldowns.reset_trigger(ev.command.usr.id, "beg");
                 ev.edit_response(ephmsg("You are not registered yet!"));
             }
         });
@@ -158,6 +161,7 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
         int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
         if (amount <= 0 && amount != -1) {
+            ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
             ev.edit_response(ephmsg("You cannot deposit \"no\" coins."));
             return;
         }
@@ -183,15 +187,17 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                             {"bal", -damt},
                             {"bank", damt}
                         }}
-                    }, [ev, damt](const dpp::http_request_completion_t &evt) {
+                    }, [ctx, ev, damt](const dpp::http_request_completion_t &evt) {
                         if (evt.status == 200) {
                             ev.edit_response(ephmsg(fmt::format("{} deposited.", FormatWithCommas(damt))));
                         } else {
+                            ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
                             ev.edit_response(ephmsg("Something went wrong while trying to deposit your money."));
                         }
                     });
                 }
             } else {
+                ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
                 ev.edit_response(ephmsg("You are not registered yet!"));
             }
         });
@@ -227,18 +233,63 @@ void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                             {"bal", wamt},
                             {"bank", -wamt}
                         }}
-                    }, [ev, wamt](const dpp::http_request_completion_t &evt) {
+                    }, [ctx, ev, wamt](const dpp::http_request_completion_t &evt) {
                         if (evt.status == 200) {
                             ev.edit_response(ephmsg(fmt::format("{} withdrawed.", FormatWithCommas(wamt))));
                         } else {
+                            ctx.cooldowns.reset_trigger(ev.command.usr.id, "withdraw");
                             ev.edit_response(ephmsg("Something went wrong while trying to withdraw your money."));
                         }
                     });
                 }
             } else {
+                ctx.cooldowns.reset_trigger(ev.command.usr.id, "withdraw");
                 ev.edit_response(ephmsg("You are not registered yet!"));
             }
         });
+    });
+}
+
+void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        ev.edit_response(ephmsg("Breme"));
+        if (std::holds_alternative<dpp::snowflake>(ev.get_parameter("user"))) {
+            dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
+            ctx.bot.user_get(user_id, [ctx, ev](const dpp::confirmation_callback_t &callback) {
+                dpp::user_identified user = std::get<dpp::user_identified>(callback.value);
+                std::string username = user.username;
+                ctx.maindb.get(std::to_string(user.id), [ctx, ev, username](const dpp::http_request_completion_t &evt) {
+                    if (evt.status == 200) {
+                        json usr_data = json::parse(evt.body);
+                        std::map<std::string, int64_t> inv; 
+                        for (auto const& [item, value]: usr_data["inv"].get<std::map<std::string, int64_t>>()) {
+                            if (value > 0) {
+                                inv[item] = value;
+                            }
+                        }
+                        int page_total = std::ceil(inv.size()/5.0);
+                        if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
+                            // get page_number of user's inventory
+                        } else {
+                            // get first page
+                        }
+                        ev.edit_response(dpp::message().add_embed(dpp::embed()
+                            .set_title(fmt::format("{}'s inventory", username))
+                            .set_description(usr_data["inv"].dump(4))
+                        ));
+                    } else {
+                        ctx.cooldowns.reset_trigger(ev.command.usr.id, "inventory");
+                        ev.edit_response(ephmsg(fmt::format("{} has not registered yet!", username)));
+                    }
+                });
+            });
+        } else {
+            if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
+                // get page_number of author's inventory
+            } else {
+                // get first page
+            }
+        }
     });
 }
 
