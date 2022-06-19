@@ -22,7 +22,7 @@ void CooldownManager::trigger(dpp::snowflake id, std::string command_name) {
     }
 }
 
-void CooldownManager::reset(dpp::snowflake id, std::string command_name) {
+void CooldownManager::reset_trigger(dpp::snowflake id, std::string command_name) {
     std::unique_lock l(cooldown_mutex);
     cooldown_cache::const_iterator existing = cache_map->find(id);
     if (existing != cache_map->end()) {

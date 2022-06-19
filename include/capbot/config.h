@@ -45,8 +45,6 @@ void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void fail(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
-void test(const CmdCtx ctx, const dpp::slashcommand_t &ev);
-
 // max commands is 100, 25 subcommands, 25 subcommand groups
 inline const std::map<std::string, command_definition> cmds = {
     { "ping", { "A ping command", ping, 0 }},
@@ -80,13 +78,6 @@ inline const std::map<std::string, command_definition> cmds = {
             }
         }
     }},
-    { "test", {
-        "Command for testing", test, 20, {
-            {
-                dpp::command_option(dpp::co_integer, "test", "tesing", true)
-            }
-        }
-    }}
 };
 
 inline const json shop_items = R"({

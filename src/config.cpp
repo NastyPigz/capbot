@@ -153,6 +153,8 @@ void beg(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 }
 
 void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    // TODO: 
+    // implement bank_color(s)
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
         int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
         if (amount <= 0 && amount != -1) {
@@ -183,7 +185,7 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                         }}
                     }, [ev, damt](const dpp::http_request_completion_t &evt) {
                         if (evt.status == 200) {
-                            ev.edit_response(ephmsg(fmt::format("{} deposited.", damt)));
+                            ev.edit_response(ephmsg(fmt::format("{} deposited.", FormatWithCommas(damt))));
                         } else {
                             ev.edit_response(ephmsg("Something went wrong while trying to deposit your money."));
                         }
@@ -197,6 +199,8 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 }
 
 void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    // TODO:
+    // implement bank color(s)
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
         int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
         if (amount <= 0 && amount != -1) {
@@ -225,7 +229,7 @@ void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                         }}
                     }, [ev, wamt](const dpp::http_request_completion_t &evt) {
                         if (evt.status == 200) {
-                            ev.edit_response(ephmsg(fmt::format("{} withdrawed.", wamt)));
+                            ev.edit_response(ephmsg(fmt::format("{} withdrawed.", FormatWithCommas(wamt))));
                         } else {
                             ev.edit_response(ephmsg("Something went wrong while trying to withdraw your money."));
                         }
@@ -240,16 +244,4 @@ void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void fail(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
    // hehehehaw
-}
-
-void test(const CmdCtx ctx, const dpp::slashcommand_t &ev) { // DOESNT WORK
-    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-        int64_t test = std::get<int64_t>(ev.get_parameter("test"));
-        if (test == 1) {
-            ctx.cooldowns.reset(ev.command.usr.id, "test");
-            ev.edit_response(ephmsg("Reset cooldown."));
-        } else {
-            ev.edit_response(ephmsg("Did nothing."));
-        }
-    });
 }

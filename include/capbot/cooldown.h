@@ -17,12 +17,10 @@ public:
 
 	void trigger(dpp::snowflake id, std::string command_name);
 
-	void reset(dpp::snowflake id, std::string command_name);
+	void reset_trigger(dpp::snowflake id, std::string command_name);
 
 	bool can_trigger(dpp::snowflake id, std::string command_name);
 
 	int seconds_to_wait(dpp::snowflake id, std::string command_name);
-
-	void reset_trigger(dpp::snowflake id, std::string command_name);
 };
 #endif
