@@ -252,7 +252,12 @@ void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-        ev.edit_response(ephmsg("Breme"));
+        if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
+            if (std::get<int64_t>(ev.get_parameter("page")) < 1) {
+                ev.edit_response(ephmsg("Page number must be above 0"));
+                return;
+            }
+        }
         if (std::holds_alternative<dpp::snowflake>(ev.get_parameter("user"))) {
             dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
             ctx.bot.user_get(user_id, [ctx, ev](const dpp::confirmation_callback_t &callback) {
@@ -267,16 +272,52 @@ void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                                 inv[item] = value;
                             }
                         }
-                        int page_total = std::ceil(inv.size()/5.0);
-                        if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
-                            // get page_number of user's inventory
+                        if (inv.size() > 0) {
+                            int page_total = std::ceil(inv.size()/5.0);
+                            int page = 1;
+                            dpp::embed em;
+                            em.set_title(fmt::format("{}'s inventory", username));
+                            if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
+                                page = std::get<int64_t>(ev.get_parameter("page"));
+                                em.set_footer(dpp::embed_footer().set_text(fmt::format("page {} of {}", page, page_total)));
+                                // get page_number of user's inventory
+                            } else {
+                                em.set_footer(dpp::embed_footer().set_text(fmt::format("page {} of {}", 1, page_total)));
+                                // get first page
+                            }
+                            if (page > page_total) {
+                                ev.edit_response(ephmsg("Page number provided was over total amount of pages"));
+                                return;
+                            }
+                            for (std::map<std::string, int64_t>::iterator it = inv.begin(); it != inv.end(); it++) {
+                                int items = std::distance(inv.begin(), it);
+                                if ((page-1)*5 > items) {
+                                    continue;
+                                }
+                                std::string display_name = shop_items[it->first]["display"].get<std::string>();
+                                std::string names = "";
+                                if (shop_items[it->first]["name"].get<std::vector<std::string>>().size() > 2) {
+                                    names = fmt::format("`{}`, `{}`, `{}` ...", shop_items[it->first]["name"][0].get<std::string>(), shop_items[it->first]["name"][1].get<std::string>(), shop_items[it->first]["name"][2].get<std::string>());
+                                } else if (shop_items[it->first]["name"].get<std::vector<std::string>>().size() == 2) {
+                                    names = fmt::format("`{}`, `{}`", shop_items[it->first]["name"][0].get<std::string>(), shop_items[it->first]["name"][1].get<std::string>());
+                                } else {
+                                    names = fmt::format("`{}`", shop_items[it->first]["name"][0].get<std::string>());
+                                }
+                                em.add_field(
+                                    fmt::format("{} - {} owned", display_name, FormatWithCommas(it->second)),
+                                    fmt::format("*ID* {}", names)
+                                );
+                                if ((items+1) / page == 5) {
+                                    break;
+                                }
+                            }
+                            ev.edit_response(dpp::message().add_embed(dpp::embed()
+                                .set_title(fmt::format("{}'s inventory", username))
+                                .set_description(usr_data["inv"].dump(4))
+                            ).add_embed(em));
                         } else {
-                            // get first page
+                            ev.edit_response(ephmsg("they're too poor to have anything"));
                         }
-                        ev.edit_response(dpp::message().add_embed(dpp::embed()
-                            .set_title(fmt::format("{}'s inventory", username))
-                            .set_description(usr_data["inv"].dump(4))
-                        ));
                     } else {
                         ctx.cooldowns.reset_trigger(ev.command.usr.id, "inventory");
                         ev.edit_response(ephmsg(fmt::format("{} has not registered yet!", username)));
@@ -284,11 +325,67 @@ void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                 });
             });
         } else {
-            if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
-                // get page_number of author's inventory
-            } else {
-                // get first page
-            }
+            std::string username = ev.command.usr.username;
+            ctx.maindb.get(std::to_string(ev.command.usr.id), [ctx, ev, username](const dpp::http_request_completion_t &evt) {
+                if (evt.status == 200) {
+                    json usr_data = json::parse(evt.body);
+                    std::map<std::string, int64_t> inv; 
+                    for (auto const& [item, value]: usr_data["inv"].get<std::map<std::string, int64_t>>()) {
+                        if (value > 0) {
+                            inv[item] = value;
+                        }
+                    }
+                    if (inv.size() > 0) {
+                        int page_total = std::ceil(inv.size()/5.0);
+                        int page = 1;
+                        dpp::embed em;
+                        em.set_title(fmt::format("{}'s inventory", username));
+                        if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
+                            page = std::get<int64_t>(ev.get_parameter("page"));
+                            em.set_footer(dpp::embed_footer().set_text(fmt::format("page {} of {}", page, page_total)));
+                            // get page_number of user's inventory
+                        } else {
+                            em.set_footer(dpp::embed_footer().set_text(fmt::format("page {} of {}", 1, page_total)));
+                            // get first page
+                        }
+                        if (page > page_total) {
+                            ev.edit_response(ephmsg("Page number provided was over total amount of pages"));
+                            return;
+                        }
+                        for (std::map<std::string, int64_t>::iterator it = inv.begin(); it != inv.end(); it++) {
+                            int items = std::distance(inv.begin(), it);
+                            if ((page-1)*5 > items) {
+                                continue;
+                            }
+                            std::string display_name = shop_items[it->first]["display"].get<std::string>();
+                            std::string names = "";
+                            if (shop_items[it->first]["name"].get<std::vector<std::string>>().size() > 2) {
+                                names = fmt::format("`{}`, `{}`, `{}` ...", shop_items[it->first]["name"][0].get<std::string>(), shop_items[it->first]["name"][1].get<std::string>(), shop_items[it->first]["name"][2].get<std::string>());
+                            } else if (shop_items[it->first]["name"].get<std::vector<std::string>>().size() == 2) {
+                                names = fmt::format("`{}`, `{}`", shop_items[it->first]["name"][0].get<std::string>(), shop_items[it->first]["name"][1].get<std::string>());
+                            } else {
+                                names = fmt::format("`{}`", shop_items[it->first]["name"][0].get<std::string>());
+                            }
+                            em.add_field(
+                                fmt::format("{} - {} owned", display_name, FormatWithCommas(it->second)),
+                                fmt::format("*ID* {}", names)
+                            );
+                            if ((items+1) / page == 5) {
+                                break;
+                            }
+                        }
+                        ev.edit_response(dpp::message().add_embed(dpp::embed()
+                            .set_title(fmt::format("{}'s inventory", username))
+                            .set_description(usr_data["inv"].dump(4))
+                        ).add_embed(em));
+                    } else {
+                        ev.edit_response(ephmsg("you're too poor to have anything"));
+                    }
+                } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "inventory");
+                    ev.edit_response(ephmsg("You have not registered yet!"));
+                }
+            });
         }
     });
 }

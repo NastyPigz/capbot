@@ -48,6 +48,7 @@ int main() {
     prokey = getenv("PROJECT_KEY");
     projid = getenv("PROJECT_ID");
     Db maindb(prokey, projid, "currency", bot);
+    Db usersdb(prokey, projid, "bot_users", bot);
     // db_tests(maindb);
 
     CooldownManager cooldowns;
@@ -72,12 +73,24 @@ int main() {
         std::cout << "Logged in as " << bot.me.username << "!\n";
     });
 
-    bot.on_slashcommand([&bot, &maindb, &cooldowns](const dpp::slashcommand_t& event) {
+    bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb](const dpp::slashcommand_t& event) {
         std::string name = event.command.get_command_name();
         if (cmds.find(name) != cmds.end()) {
             int wait_time = cooldowns.seconds_to_wait(event.command.usr.id, name);
             if (wait_time <= 0) {
                 cooldowns.trigger(event.command.usr.id, name);
+                usersdb.patch(std::to_string(event.command.usr.id), {
+                    {"increment", {
+                        {"cmds", 1}
+                    }}
+                }, [&usersdb, event](const dpp::http_request_completion_t &evt) {
+                    if (evt.status == 404) {
+                        usersdb.post({
+                            {"key", std::to_string(event.command.usr.id)},
+                            {"cmds", 1}
+                        });
+                    }
+                });
                 cmds.at(name).function(CmdCtx{bot, maindb, cooldowns}, event);
             } else {
                 event.reply(ephmsg(fmt::format("Woah, slow down! Next execution is in {}", wait_time)));
