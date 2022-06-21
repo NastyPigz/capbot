@@ -271,7 +271,7 @@ void give_items(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                 std::string username = user.username;
                 ctx.maindb.patch(std::to_string(user.id), {
                     {"increment", {
-                        {"inventory."+std::get<std::string>(ev.get_parameter("item")), std::get<int64_t>(ev.get_parameter("amount"))}
+                        {"inv."+std::get<std::string>(ev.get_parameter("item")), std::get<int64_t>(ev.get_parameter("amount"))}
                     }}
                 }, [ctx, ev, username](const dpp::http_request_completion_t &evt) {
                     if (evt.status == 200) {
