@@ -19,4 +19,12 @@ void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void give_items(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
+void give_money(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void share(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
 #endif

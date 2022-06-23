@@ -228,16 +228,26 @@ void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
         }
         if (std::holds_alternative<dpp::snowflake>(ev.get_parameter("user"))) {
             dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
-            ctx.bot.user_get(user_id, [ctx, ev](const dpp::confirmation_callback_t &callback) {
+            ctx.bot.user_get(user_id, [ctx, ev, user_id](const dpp::confirmation_callback_t &callback) {
                 dpp::user_identified user = std::get<dpp::user_identified>(callback.value);
                 std::string username = user.username;
-                ctx.maindb.get(std::to_string(user.id), [ctx, ev, username](const dpp::http_request_completion_t &evt) {
+                ctx.maindb.get(std::to_string(user.id), [ctx, ev, username, user_id](const dpp::http_request_completion_t &evt) {
                     if (evt.status == 200) {
                         int page = 1;
                         if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
                             page = std::get<int64_t>(ev.get_parameter("page"));
                         }
-                        ev.edit_response(getinv(json::parse(evt.body), username, "you", page));
+                        json usr_data = json::parse(evt.body);
+                        auto [msg, b] = getinv(usr_data, username, "they", page);
+                        ev.edit_response(msg);
+                        if (b) {
+                            ctx.maindb.patch(std::to_string(user_id), {
+                                {"set", {
+                                    {"inv", usr_data["inv"]}
+                                }}
+                            });
+                        }
+                        chkinv(ctx.maindb, usr_data["inv"], std::to_string(user_id));
                     } else {
                         ctx.cooldowns.reset_trigger(ev.command.usr.id, "inventory");
                         ev.edit_response(ephmsg(fmt::format("{} has not registered yet!", username)));
@@ -252,7 +262,17 @@ void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                     if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
                         page = std::get<int64_t>(ev.get_parameter("page"));
                     }
-                    ev.edit_response(getinv(json::parse(evt.body), username, "you", page));
+                    json usr_data = json::parse(evt.body);
+                    auto [msg, b] = getinv(usr_data, username, "you", page);
+                    ev.edit_response(msg);
+                    if (b) {
+                        ctx.maindb.patch(std::to_string(ev.command.usr.id), {
+                            {"set", {
+                                {"inv", usr_data["inv"]}
+                            }}
+                        });
+                    }
+                    chkinv(ctx.maindb, usr_data["inv"], std::to_string(ev.command.usr.id));
                 } else {
                     ctx.cooldowns.reset_trigger(ev.command.usr.id, "inventory");
                     ev.edit_response(ephmsg("You have not registered yet!"));
@@ -296,5 +316,90 @@ void give_items(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                 }
             });
         }
+    });
+}
+
+void give_money(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        if (std::holds_alternative<dpp::snowflake>(ev.get_parameter("user"))) {
+            dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
+            ctx.bot.user_get(user_id, [ctx, ev](const dpp::confirmation_callback_t &callback) {
+                dpp::user_identified user = std::get<dpp::user_identified>(callback.value);
+                std::string username = user.username;
+                ctx.maindb.patch(std::to_string(user.id), {
+                    {"increment", {
+                        {"bal", std::get<int64_t>(ev.get_parameter("amount"))}
+                    }}
+                }, [ctx, ev, username](const dpp::http_request_completion_t &evt) {
+                    if (evt.status == 200) {
+                        ev.edit_response(ephmsg("ok done"));
+                    } else {
+                        ctx.cooldowns.reset_trigger(ev.command.usr.id, "inventory");
+                        ev.edit_response(ephmsg(fmt::format("{} has not registered yet!", username)));
+                    }
+                });
+            });
+        } else {
+            ctx.maindb.patch(std::to_string(ev.command.usr.id), {
+                {"increment", {
+                    {"bal", std::get<int64_t>(ev.get_parameter("amount"))}
+                }}
+            }, [ctx, ev](const dpp::http_request_completion_t &evt) {
+                if (evt.status == 200) {
+                    ev.edit_response(ephmsg("ok done"));
+                } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "inventory");
+                    ev.edit_response(ephmsg("You have not registered yet!"));
+                }
+            });
+        }
+    });
+}
+
+void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        dpp::command_interaction cmd_data = ev.command.get_command_interaction();
+        if (cmd_data.options[0].name == "buy") {
+
+        } else if (cmd_data.options[0].name == "sell") {
+
+        } else if (cmd_data.options[0].name == "view") {
+            // user as option
+        } else if (cmd_data.options[0].name == "rate") {
+
+        } else if (cmd_data.options[0].name == "reset") {
+
+        }
+    });
+}
+
+void share(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        getbal_then(ctx.maindb, std::to_string(ev.command.usr.id), [ctx, ev](json pl) {
+            int64_t balance = pl["bal"].get<int64_t>();
+            int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
+            if (balance < amount) {
+                return ev.edit_response(ephmsg("You're broke mg"));
+            }
+            dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
+            ctx.maindb.patch(std::to_string(user_id), {
+                {"increment", {
+                    {"bal", amount}
+                }}
+            }, [ctx, ev, amount](const dpp::http_request_completion_t &evt) {
+                if (evt.status == 200) {
+                    ctx.maindb.patch(std::to_string(ev.command.usr.id), {
+                        {"increment", {
+                            {"bal", -amount}
+                        }}
+                    }, [ev, amount](auto _) {
+                        ev.edit_response(ephmsg(fmt::format("{} shared.", amount)));
+                    });
+                } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "share");
+                    ev.edit_response(ephmsg("They have not registered yet!"));
+                }
+            });
+        });
     });
 }

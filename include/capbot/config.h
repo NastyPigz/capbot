@@ -73,16 +73,71 @@ inline const std::map<std::string, command_definition> cmds = {
     {"gibitem", {
         "gives an item to someone", give_items, 0, {
             {
-                dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
+                dpp::command_option(dpp::co_string, "item", "Name of item", true)
             },
             {
-                dpp::command_option(dpp::co_string, "item", "Name of item", true)
+                dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
             },
             {
                 dpp::command_option(dpp::co_user, "user", "Target user's inventory", false)
             }
         }
     }},
+    {"gib", {
+        "abuse money", give_money, 0, {
+            {
+                dpp::command_option(dpp::co_integer, "amount", "amount of money", true)
+            },
+            {
+                dpp::command_option(dpp::co_user, "user", "Target user's money", false)
+            }
+        }
+    }},
+    {"btc", {
+        "bitcoins", bitcoin, 0, {
+            {
+                dpp::command_option(dpp::co_sub_command, "view", "See bitcoins").
+                    add_option(dpp::command_option(dpp::co_user, "user", "Target user's bitcoins", false))
+            },
+            {
+                dpp::command_option(dpp::co_sub_command, "buy", "Buy bitcoins").
+                    add_option(dpp::command_option(dpp::co_integer, "amount", "amount of bitcoins to buy", true))
+            },
+            {
+                dpp::command_option(dpp::co_sub_command, "sell", "Sell bitcoins").
+                    add_option(dpp::command_option(dpp::co_integer, "amount", "amount of bitcoins to sell", true))
+            },
+            {
+                dpp::command_option(dpp::co_sub_command, "rate", "Shows you bitcoin exchange rate")
+            },
+            {
+                dpp::command_option(dpp::co_sub_command, "reset", "Resets bitcoin rate to 50,000")
+            }
+        }
+    }},
+    {"share", {
+        "sharing is caring", share, 3, {
+            {
+                dpp::command_option(dpp::co_user, "user", "Which user to share to", true)
+            },
+            {
+                dpp::command_option(dpp::co_integer, "amount", "How much to share", true)
+            }
+        }
+    }},
+    // {"shareitem", {
+    //     "gives an item to someone", share_item, 0, {
+    //         {
+    //             dpp::command_option(dpp::co_string, "item", "Name of item", true)
+    //         },
+    //         {
+    //             dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
+    //         },
+    //         {
+    //             dpp::command_option(dpp::co_user, "user", "Target user's inventory", false)
+    //         }
+    //     }
+    // }},
 };
 
 #endif
