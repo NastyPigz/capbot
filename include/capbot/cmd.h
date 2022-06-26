@@ -11,6 +11,7 @@ struct CmdCtx {
     dpp::cluster &bot;
     const Db &maindb;
 	CooldownManager &cooldowns;
+	const int &btc_timer;
 };
 
 using command_function = const std::function<void(const CmdCtx, const dpp::slashcommand_t &ev)>;

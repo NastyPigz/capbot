@@ -71,7 +71,7 @@ inline const std::map<std::string, command_definition> cmds = {
         }
     }},
     {"gibitem", {
-        "gives an item to someone", give_items, 0, {
+        "abuse an item to someone", give_items, 0, {
             {
                 dpp::command_option(dpp::co_string, "item", "Name of item", true)
             },
@@ -94,7 +94,7 @@ inline const std::map<std::string, command_definition> cmds = {
         }
     }},
     {"btc", {
-        "bitcoins", bitcoin, 0, {
+        "bitcoins", bitcoin, 1, {
             {
                 dpp::command_option(dpp::co_sub_command, "view", "See bitcoins").
                     add_option(dpp::command_option(dpp::co_user, "user", "Target user's bitcoins", false))
@@ -125,19 +125,19 @@ inline const std::map<std::string, command_definition> cmds = {
             }
         }
     }},
-    // {"shareitem", {
-    //     "gives an item to someone", share_item, 0, {
-    //         {
-    //             dpp::command_option(dpp::co_string, "item", "Name of item", true)
-    //         },
-    //         {
-    //             dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
-    //         },
-    //         {
-    //             dpp::command_option(dpp::co_user, "user", "Target user's inventory", false)
-    //         }
-    //     }
-    // }},
+    {"shareitem", {
+        "gives an item to someone", share_item, 0, {
+            {
+                dpp::command_option(dpp::co_user, "user", "Target user's inventory", true)
+            },
+            {
+                dpp::command_option(dpp::co_string, "item", "Name of item", true)
+            },
+            {
+                dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
+            }
+        }
+    }},
 };
 
 #endif

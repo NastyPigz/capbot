@@ -81,9 +81,13 @@ void chkinv(const Db &maindb, json inv, std::string id) {
     }
 }
 
-void getbal_then(const Db &maindb, std::string user_id, std::function<void(json)> callback) {
-    maindb.get(user_id, [callback](const dpp::http_request_completion_t &evt) {
-        callback(json::parse(evt.body));
+void getbal_then(const Db &maindb, std::string user_id, std::function<void(json)> callback, std::function<void()> err) {
+    maindb.get(user_id, [callback, err](const dpp::http_request_completion_t &evt) {
+        if (evt.status == 200) {
+            callback(json::parse(evt.body));
+        } else {
+            err();
+        }
     });
 }
 #endif

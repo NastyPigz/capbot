@@ -22,6 +22,16 @@
 //     }
 // }
 
+void replace_all(std::string& str, const std::string& from, const std::string& to) {
+    if(from.empty())
+        return;
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+    }
+}
+
 void join(const std::vector<std::string>& v, char c, std::string& s) {
 
     s.clear();
@@ -51,6 +61,25 @@ int main() {
     Db usersdb(prokey, projid, "bot_users", bot);
     // db_tests(maindb);
 
+    int sec_left = 1;
+    bot.start_timer([&sec_left](dpp::timer timer) {
+        if (sec_left == 60) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> rng(0, 9);
+            if (rng(gen) == 0) {
+                std::uniform_int_distribution<> distr(10000, 20000);
+                exchange_rate = distr(gen);
+            } else {
+                std::uniform_int_distribution<> distr(40000, 60000);
+                exchange_rate = distr(gen);
+            }
+            sec_left = 1;
+        } else {
+            sec_left = sec_left + 1;
+        }
+    }, 1);
+
     CooldownManager cooldowns;
 
     bot.on_log(dpp::utility::cout_logger());
@@ -65,7 +94,22 @@ int main() {
 				  set_description(def.second.description).
 				  set_application_id(bot.me.id).
                   set_dm_permission(true);
-				c.options = def.second.parameters;
+                for (const dpp::command_option &param: def.second.parameters) {
+                    if (param.name == "item") {
+                        dpp::command_option opt = param;
+                        for (auto &[key, _]: shop_items_default.get<std::map<std::string, int>>()) {
+                            dpp::command_option_choice choice;
+                            std::string key_name = key;
+                            replace_all(key_name, "_", " ");
+                            choice.name = key_name;
+                            choice.value = key;
+                            opt.add_choice(choice);
+                        }
+                        c.add_option(opt);
+                    } else {
+                        c.add_option(param);
+                    }
+                }
 				slash_commands.push_back(c);
 			}
 			bot.global_bulk_command_create(slash_commands);
@@ -73,7 +117,8 @@ int main() {
         std::cout << "Logged in as " << bot.me.username << "!\n";
     });
 
-    bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb](const dpp::slashcommand_t& event) {
+    bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb, &sec_left](const dpp::slashcommand_t& event) {
+        std::cout << sec_left << '\n';
         std::string name = event.command.get_command_name();
         if (cmds.find(name) != cmds.end()) {
             int wait_time = cooldowns.seconds_to_wait(event.command.usr.id, name);
@@ -91,7 +136,7 @@ int main() {
                         });
                     }
                 });
-                cmds.at(name).function(CmdCtx{bot, maindb, cooldowns}, event);
+                cmds.at(name).function(CmdCtx{bot, maindb, cooldowns, sec_left}, event);
             } else {
                 event.reply(ephmsg(fmt::format("Woah, slow down! Next execution is in {}", wait_time)));
             }
@@ -125,7 +170,7 @@ int main() {
         }
     });
  
-    std::cout << "starting..." << '\n';
+    std::cout << "starting with version " << dpp::utility::version() << '\n';
     bot.start(false);
     return 0;
 }

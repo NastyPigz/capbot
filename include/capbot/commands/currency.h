@@ -3,6 +3,8 @@
 #include <dpp/dpp.h>
 #include "../cmd.h"
 
+inline int exchange_rate = 50000;
+
 void _register(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void unregister(const CmdCtx ctx, const dpp::slashcommand_t &ev);
