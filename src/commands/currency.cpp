@@ -373,6 +373,11 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                 ev.edit_response(ephmsg("You have not registered yet!"));
             });
         } else if (cmd_data.options[0].name == "sell") {
+            if (std::get<int64_t>(cmd_data.options[0].options[0].value) <= 0) {
+                return ev.edit_response(ephmsg("").add_embed(dpp::embed()
+                    .set_title("Stop trying to buy/sell nothing!")
+                ));
+            }
             getbal_then(ctx.maindb, std::to_string(ev.command.usr.id), [ctx, ev, cmd_data](json pl) {
                 int64_t balance = pl["btc"].get<int64_t>();
                 int64_t amount = std::get<int64_t>(cmd_data.options[0].options[0].value);
@@ -444,6 +449,9 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 void share(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     // tax hehehehaw
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        if (std::get<int64_t>(ev.get_parameter("amount")) <= 0) {
+            return ev.edit_response(ephmsg("Share at least 1 coin bro"));
+        }
         getbal_then(ctx.maindb, std::to_string(ev.command.usr.id), [ctx, ev](json pl) {
             int64_t balance = pl["bal"].get<int64_t>();
             int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
@@ -484,6 +492,9 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
         if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
             return ev.edit_response(ephmsg("That item doesn't exist"));
+        }
+        if (std::get<int64_t>(ev.get_parameter("amount")) <= 0) {
+            return ev.edit_response(ephmsg("Share at least 1 item bro"));
         }
         getbal_then(ctx.maindb, std::to_string(ev.command.usr.id), [ctx, ev](json pl) {
             bool edit = false;
