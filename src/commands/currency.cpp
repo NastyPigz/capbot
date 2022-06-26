@@ -473,7 +473,7 @@ void share(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                             {"bal", -amount}
                         }}
                     }, [ev, amount](auto _) {
-                        ev.edit_response(ephmsg(fmt::format("{} shared.", amount)));
+                        ev.edit_response(ephmsg(fmt::format("{} coin shared.", amount)));
                     });
                 } else {
                     ctx.cooldowns.reset_trigger(ev.command.usr.id, "share");
@@ -526,7 +526,7 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                             {"inv."+std::get<std::string>(ev.get_parameter("item")), -amount}
                         }}
                     }, [ev, amount](auto _) {
-                        ev.edit_response(ephmsg(fmt::format("{} shared.", amount)));
+                        ev.edit_response(ephmsg(fmt::format("{} of {} shared.", amount, std::get<std::string>(ev.get_parameter("item")))));
                     });
                 } else {
                     ctx.cooldowns.reset_trigger(ev.command.usr.id, "shareitem");
