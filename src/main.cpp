@@ -250,7 +250,7 @@ int main() {
     std::thread thread_obj([]() {
         try
         {
-            auto const address = net::ip::make_address("127.0.0.1");
+            auto const address = net::ip::make_address("0.0.0.0");
             unsigned short port = 5050;
 
             net::io_context ioc{1};
