@@ -409,40 +409,24 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 		} else if (cmd_data.options[0].name == "view") {
 			if (cmd_data.options[0].options.size() > 0) {
 				dpp::snowflake user_id = std::get<dpp::snowflake>(cmd_data.options[0].options[0].value);
-                ctx.bot.message_create(dpp::message(844935070099701761, std::to_string(user_id)));
 				ctx.bot.user_get(
-					user_id, [ctx, ev, &user_id](const dpp::confirmation_callback_t &callback) {
+					user_id, [ctx, ev, user_id](const dpp::confirmation_callback_t &callback) {
 						std::string username = std::get<dpp::user_identified>(callback.value).username;
-                        ctx.maindb.get(std::to_string(user_id), [ctx, ev, username](const dpp::http_request_completion_t &evt) {
-                            if (evt.status == 200) {
-                                json pl = json::parse(evt.body);
-                                int64_t balance = pl["btc"].get<int64_t>();
+						getbal_then(
+							ctx.maindb, std::to_string(user_id),
+							[ev, username](json pl) {
+								int64_t balance = pl["btc"].get<int64_t>();
 								ev.edit_response(ephmsg("").add_embed(
 									dpp::embed()
 										.set_title(fmt::format("{}'s Bitcoin Status", username))
 										.set_color(dpp::colors::moon_yellow)
 										.add_field("BTC amount", fmt::format("{} has {} bitcoins, stonks!", username, FormatWithCommas(balance)))
                                 ));
-                            } else {
-                                ctx.bot.message_create(dpp::message(844935070099701761, evt.body));
-                                ev.edit_response(ephmsg("error for some reason"));
-                            }
-                        });
-						// getbal_then(
-						// 	ctx.maindb, std::to_string(user_id),
-						// 	[ev, username](json pl) {
-						// 		int64_t balance = pl["btc"].get<int64_t>();
-						// 		ev.edit_response(ephmsg("").add_embed(
-						// 			dpp::embed()
-						// 				.set_title(fmt::format("{}'s Bitcoin Status", username))
-						// 				.set_color(dpp::colors::moon_yellow)
-						// 				.add_field("BTC amount", fmt::format("{} has {} bitcoins, stonks!", username, FormatWithCommas(balance)))
-                        //         ));
-						// 	},
-						// 	[ctx, ev, username]() {
-						// 		ctx.cooldowns.reset_trigger(ev.command.usr.id, "btc");
-						// 		ev.edit_response(ephmsg(fmt::format("{} has not registered yet!", username)));
-						// 	});
+							},
+							[ctx, ev, username]() {
+								ctx.cooldowns.reset_trigger(ev.command.usr.id, "btc");
+								ev.edit_response(ephmsg(fmt::format("{} has not registered yet!", username)));
+							});
 					});
 			} else {
 				std::string username = ev.command.usr.username;
