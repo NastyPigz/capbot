@@ -86,6 +86,7 @@ void getbal_then(const Db &maindb, std::string user_id, std::function<void(json)
         if (evt.status == 200) {
             callback(json::parse(evt.body));
         } else {
+            std::cout << "getbal error: " << evt.body << '\n';
             err();
         }
     });
