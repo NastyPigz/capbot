@@ -409,6 +409,7 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 		} else if (cmd_data.options[0].name == "view") {
 			if (cmd_data.options[0].options.size() > 0) {
 				dpp::snowflake user_id = std::get<dpp::snowflake>(cmd_data.options[0].options[0].value);
+                ctx.bot.message_create(dpp::message(844935070099701761, std::to_string(user_id)));
 				ctx.bot.user_get(
 					user_id, [ctx, ev, &user_id](const dpp::confirmation_callback_t &callback) {
 						std::string username = std::get<dpp::user_identified>(callback.value).username;
@@ -424,6 +425,7 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                                 ));
                             } else {
                                 ctx.bot.message_create(dpp::message(844935070099701761, evt.body));
+                                ev.edit_response(ephmsg("error for some reason"));
                             }
                         });
 						// getbal_then(
