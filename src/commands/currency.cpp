@@ -679,7 +679,7 @@ void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 					[ctx, ev, amount, item](const dpp::http_request_completion_t &evt) {
 						if (evt.status == 200) {
 							find_use(std::to_string(ev.command.usr.id), item);
-							ev.edit_response(ephmsg(fmt::format("Used {} of {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"])));
+							ev.edit_response(ephmsg(fmt::format("Used {} of {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"].get<std::string>())));
 						} else {
 							ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
 							ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
@@ -729,7 +729,7 @@ void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                     }},
 					[ctx, ev, amount, price](const dpp::http_request_completion_t &evt) {
 						if (evt.status == 200) {
-							ev.edit_response(ephmsg(fmt::format("Bought {} of {} for {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"], amount * price)));
+							ev.edit_response(ephmsg(fmt::format("Bought {} of {} for {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"].get<std::string>(), amount * price)));
 						} else {
 							ctx.cooldowns.reset_trigger(ev.command.usr.id, "buy");
 							ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
@@ -780,7 +780,7 @@ void sell_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                     }},
 					[ctx, ev, amount, price](const dpp::http_request_completion_t &evt) {
 						if (evt.status == 200) {
-							ev.edit_response(ephmsg(fmt::format("Sold {} of {} for {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"], amount * price)));
+							ev.edit_response(ephmsg(fmt::format("Sold {} of {} for {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"].get<std::string>(), amount * price)));
 						} else {
 							ctx.cooldowns.reset_trigger(ev.command.usr.id, "sell");
 							ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));

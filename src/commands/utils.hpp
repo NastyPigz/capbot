@@ -87,7 +87,7 @@ dpp::message getshop(const int page) {
         int64_t price = it->second["price"].get<int64_t>();
         em.add_field(
             it->second["display"],
-            fmt::format("{} | {}", (price == 0 ? "-2147483648" : FormatWithCommas(price)), it->second["description"])
+            fmt::format("{} | {}", (price == 0 ? "-2147483648" : FormatWithCommas(price)), it->second["description"].get<std::string>())
         );
         if ((items_count+1) / page == 5) {
             break;

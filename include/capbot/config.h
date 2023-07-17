@@ -51,11 +51,11 @@ inline const std::map<std::string, command_definition> cmds = {
     { "banks", {
         "View avaliable banks", banks, 1, {
             { dpp::command_option(dpp::co_integer, "type", "the bank you want to view.", false)
-                .add_choice(dpp::command_option_choice("default", 0))
-                .add_choice(dpp::command_option_choice("premium", 1))
-                .add_choice(dpp::command_option_choice("royal", 2))
-                .add_choice(dpp::command_option_choice("meme", 3))
-                .add_choice(dpp::command_option_choice("ussr", 4))
+                .add_choice(dpp::command_option_choice("default", std::int64_t(0)))
+                .add_choice(dpp::command_option_choice("premium", std::int64_t(1)))
+                .add_choice(dpp::command_option_choice("royal", std::int64_t(2)))
+                .add_choice(dpp::command_option_choice("meme", std::int64_t(3)))
+                .add_choice(dpp::command_option_choice("ussr", std::int64_t(4)))
             }
         }
     }},
