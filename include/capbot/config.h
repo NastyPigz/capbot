@@ -181,7 +181,8 @@ inline const std::map<std::string, command_definition> cmds = {
                 dpp::command_option(dpp::co_integer, "page", "page number", false)
             }
         }
-    }}
+    }},
+    { "shutdown", { "Shuts off the bot", shutdown, 0 }},
 };
 
 #endif

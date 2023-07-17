@@ -23,6 +23,19 @@ void think(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT);
 }
 
+void shutdown(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    ev.thinking(EPH_OR_NOT, [ev, ctx]() {
+        if (ev.command.usr.id == dpp::snowflake(763854419484999722)) {
+            ctx.bot->shutdown();
+            delete ctx.bot;
+            bot = nullptr;
+            ev.edit_response(ephmsg("I hate women"));
+        } else {
+            ev.edit_response(emphsg(":nerd:"));
+        }
+    });
+}
+
 // void button(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 //     ev.reply(
 //         dpp::message("this text has buttons").add_component(
