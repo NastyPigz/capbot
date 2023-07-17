@@ -5,7 +5,7 @@
 #include <map>
 #include <dpp/dpp.h>
 #include <dpp/nlohmann/json.hpp>
-#include <dpp/fmt/format.h>
+#include <fmt/format.h>
 #define DEFAULT_FUNCTION [](auto e){}
 
 using handle_function = std::function<void(const dpp::http_request_completion_t&)>;

@@ -21,8 +21,8 @@ std::tuple<dpp::message, bool> getinv(json &usr_data, const std::string username
             return std::make_tuple(ephmsg("Page number provided was over total amount of pages"), false);
         }
         for (std::map<std::string, int64_t>::iterator it = inv.begin(); it != inv.end(); it++) {
-            int items = std::distance(inv.begin(), it);
-            if ((page-1)*5 > items) {
+            int items_count = std::distance(inv.begin(), it);
+            if ((page-1)*5 > items_count) {
                 continue;
             }
             if (shop_items.contains(it->first)) {
@@ -47,11 +47,11 @@ std::tuple<dpp::message, bool> getinv(json &usr_data, const std::string username
                     "*ID* `nullptr`"
                 );
             }
-            if ((items+1) / page == 5) {
+            if ((items_count+1) / page == 5) {
                 break;
             }
         }
-        return std::make_tuple(dpp::message()
+        return std::make_tuple(ephmsg("")
             .add_embed(dpp::embed()
                 .set_title(fmt::format("{}'s inventory", username))
                 .set_description(usr_data["inv"].dump(4))
@@ -62,6 +62,38 @@ std::tuple<dpp::message, bool> getinv(json &usr_data, const std::string username
     } else {
         return std::make_tuple(ephmsg(fmt::format("{}'re too poor to have anything", pronoun)), false);
     }
+}
+
+dpp::message getshop(const int page) {
+    std::map<std::string, json> shop; 
+    for (auto const& [item, value]: shop_items.get<std::map<std::string, json>>()) {
+        if (value["showing"].get<bool>()) {
+            shop[item] = value;
+        }
+    }
+    int page_total = std::ceil(shop.size()/5.0);
+    dpp::embed em;
+    em.set_title("CTC shop");
+    em.set_color(dpp::colors::red);
+    em.set_footer(dpp::embed_footer().set_text(fmt::format("page {} of {}", page, page_total)));
+    if (page > page_total) {
+        return ephmsg("Page number provided was over total amount of pages");
+    }
+    for (std::map<std::string, json>::iterator it = shop.begin(); it != shop.end(); it++) {
+        int items_count = std::distance(shop.begin(), it);
+        if ((page-1)*5 > items_count) {
+            continue;
+        }
+        int64_t price = it->second["price"].get<int64_t>();
+        em.add_field(
+            it->second["display"],
+            fmt::format("{} | {}", (price == 0 ? "-2147483648" : FormatWithCommas(price)), it->second["description"])
+        );
+        if ((items_count+1) / page == 5) {
+            break;
+        }
+    }
+    return ephmsg("").add_embed(em);
 }
 
 void chkinv(const Db &maindb, json inv, std::string id) {
@@ -86,9 +118,54 @@ void getbal_then(const Db &maindb, std::string user_id, std::function<void(json)
         if (evt.status == 200) {
             callback(json::parse(evt.body));
         } else {
-            std::cout << "getbal error: " << evt.body << '\n';
             err();
         }
     });
+}
+
+uint32_t get_bank_colour(int type) {
+    switch (type) {
+        case 0:
+            return dpp::colors::black;
+        case 1:
+            return dpp::colors::red;
+        case 2:
+            return dpp::colors::vivid_violet;
+        case 3:
+            return dpp::colors::green;
+        case 4:
+            return dpp::colors::tahiti_gold;
+    }
+}
+
+std::string get_bank_name(int type) {
+    switch (type) {
+        case 0:
+            return "Default";
+        case 1:
+            return "Premium";
+        case 2:
+            return "Royal";
+        case 3:
+            return "Meme";
+        case 4:
+            return "USSR";
+    }
+}
+
+void find_use(std::string id, std::string item) {
+    if (item == "bank_space") {
+        // have to implement bank colours first.
+    } else if (item == "coin_bag") {
+
+    } else if (item == "beef") {
+
+    } else if (item == "cursed_beef") {
+
+    } else if (item == "horrorse_celery") {
+
+    } else {
+
+    }
 }
 #endif

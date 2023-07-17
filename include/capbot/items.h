@@ -93,7 +93,7 @@ inline const json shop_items = R"({
     },
     "beef":{
         "name": ["beef", "b"],
-        "display": "<:beef:832048317734846464> beef",
+        "display": "<:beef:832048317734846464> Beef",
         "thumbnail": "https://cdn.discordapp.com/emojis/832048317734846464.png?v=1",
         "price": 50,
         "description": "Grants you 1 percent multiplier for 1 minute! Beef keeps you strong.",

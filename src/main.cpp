@@ -1,6 +1,6 @@
 // capbot
 #include <dpp/dpp.h>
-#include <dpp/fmt/format.h>
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <cctype>
@@ -16,6 +16,7 @@
 #include "capbot/config.h"
 #include "capbot/cooldown.h"
 #include "capbot/db/crud.h"
+#include "capbot/essentials.h"
 // webserver
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -50,7 +51,7 @@ namespace my_program_state {
 }  // namespace my_program_state
 
 class http_connection : public std::enable_shared_from_this<http_connection> {
-   public:
+public:
 	http_connection(tcp::socket socket) : socket_(std::move(socket)) {}
 
 	// Initiate the asynchronous operations associated with the connection.
@@ -59,7 +60,7 @@ class http_connection : public std::enable_shared_from_this<http_connection> {
 		check_deadline();
 	}
 
-   private:
+private:
 	// The socket for the currently connected client.
 	tcp::socket socket_;
 
@@ -188,27 +189,6 @@ void http_server(tcp::acceptor& acceptor, tcp::socket& socket) {
 	});
 }
 
-void replace_all(
-	std::string& str, const std::string& from, const std::string& to) {
-	if (from.empty()) return;
-	size_t start_pos = 0;
-	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-		str.replace(start_pos, from.length(), to);
-		start_pos += to.length();  // In case 'to' contains 'from', like
-								   // replacing 'x' with 'yx'
-	}
-}
-
-void join(const std::vector<std::string>& v, char c, std::string& s) {
-	s.clear();
-
-	for (std::vector<std::string>::const_iterator p = v.begin(); p != v.end();
-		 ++p) {
-		s += *p;
-		if (p != v.end() - 1) s += c;
-	}
-}
-
 int main() {
 	std::cout << "starting program..." << '\n';
 	std::thread thread_obj([]() {
@@ -230,15 +210,12 @@ int main() {
 
 	init_all_items();
 
-	if (!getenv("DISCORD_TOKEN") || !getenv("PROJECT_KEY") ||
-		!getenv("PROJECT_ID")) {
-		std::cout << "Could not find the DISCORD_TOKEN or PROJECT_KEY or "
-					 "PROJECT_ID environment variable.\n";
+	if (!getenv("DISCORD_TOKEN") || !getenv("PROJECT_KEY") || !getenv("PROJECT_ID")) {
+		std::cout << "Could not find the DISCORD_TOKEN or PROJECT_KEY or PROJECT_ID environment variable.\n";
 		return 1;
 	}
 
-	dpp::cluster bot(getenv("DISCORD_TOKEN"),
-		dpp::i_default_intents | dpp::i_message_content);
+	dpp::cluster bot(getenv("DISCORD_TOKEN"), dpp::i_default_intents | dpp::i_message_content);
 
 	// Database db(getenv("PROJECT_KEY"), getenv("RPOJECT_ID"), "gnc", bot);
 	std::string prokey, projid;
@@ -286,15 +263,13 @@ int main() {
 				for (const dpp::command_option& param : def.second.parameters) {
 					if (param.name == "item") {
 						dpp::command_option opt = param;
-						for (auto& [key, _] :
-							shop_items_default
-								.get<std::map<std::string, int> >()) {
-							dpp::command_option_choice choice;
+						for (auto& [key, _] : shop_items_default.get<std::map<std::string, int>>()) {
+							// dpp::command_option_choice choice;
 							std::string key_name = key;
 							replace_all(key_name, "_", " ");
-							choice.name = key_name;
-							choice.value = key;
-							opt.add_choice(choice);
+							// choice.name = key_name;
+							// choice.value = key;
+							opt.add_choice(dpp::command_option_choice(key_name, key));
 						}
 						c.add_option(opt);
 					} else {
@@ -308,30 +283,27 @@ int main() {
 		std::cout << "Logged in as " << bot.me.username << "!\n";
 	});
 
-	bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb, &sec_left](
-							const dpp::slashcommand_t& event) {
+	bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb, &sec_left](const dpp::slashcommand_t& event) {
 		std::cout << sec_left << '\n';
 		std::string name = event.command.get_command_name();
 		if (cmds.find(name) != cmds.end()) {
-			int wait_time =
-				cooldowns.seconds_to_wait(event.command.usr.id, name);
+			int wait_time = cooldowns.seconds_to_wait(event.command.usr.id, name);
 			if (wait_time <= 0) {
 				cooldowns.trigger(event.command.usr.id, name);
 				usersdb.patch(std::to_string(event.command.usr.id),
-					{{"increment", {{"cmds", 1}}}},
-					[&usersdb, event](
-						const dpp::http_request_completion_t& evt) {
-						if (evt.status == 404) {
-							usersdb.post(
-								{{"key", std::to_string(event.command.usr.id)},
-									{"cmds", 1}});
-						}
-					});
-				cmds.at(name).function(
-					CmdCtx{bot, maindb, cooldowns, sec_left}, event);
+							  {{"increment", {{"cmds", 1}}}},
+							  [&usersdb, event](
+								  const dpp::http_request_completion_t& evt) {
+								  if (evt.status == 404) {
+									  usersdb.post({{"key", std::to_string(event.command.usr.id)}, {"cmds", 1}});
+								  }
+							  });
+				maindb.patch(std::to_string(event.command.usr.id),
+					{{"increment", {{"exp", 1}}}}
+				);
+				cmds.at(name).function(CmdCtx{bot, maindb, cooldowns, sec_left}, event);
 			} else {
-				event.reply(ephmsg(fmt::format(
-					"Woah, slow down! Next execution is in {}", wait_time)));
+				event.reply(ephmsg(fmt::format("Woah, slow down! Next execution is in {}", wait_time)));
 			}
 		}
 	});
@@ -341,8 +313,7 @@ int main() {
 			return;
 		}
 		if (event.msg.content == "test") {
-			bot.message_create(
-				dpp::message(event.msg.channel_id, "Test success"));
+			bot.message_create(dpp::message(event.msg.channel_id, "Test success"));
 		}
 		if (event.msg.content.rfind("s!", 0) == 0 &&
 			event.msg.content.length() > 2) {
@@ -352,8 +323,7 @@ int main() {
 			std::istream_iterator<std::string> end;
 			std::vector<std::string> vstrings(begin, end);
 			std::string cmd = vstrings[0];
-			std::transform(cmd.begin(), cmd.end(), cmd.begin(),
-				[](unsigned char c) { return std::tolower(c); });
+			std::transform(cmd.begin(), cmd.end(), cmd.begin(), [](unsigned char c) { return std::tolower(c); });
 			std::string s;
 			vstrings.erase(vstrings.begin());
 			join(vstrings, ',', s);
@@ -362,12 +332,17 @@ int main() {
 			// std::copy(vstrings.begin(), vstrings.end(),
 			// std::ostream_iterator<std::string>(std::cout, "\n")); if
 			// (!find_commands(cmd, event.msg)) {
-			bot.message_create(dpp::message(event.msg.channel_id,
-				fmt::format("Prefix detected! Cmd: {} Args: (len = {}) {}", cmd,
-					std::to_string(vstrings.size()), s)));
+			bot.message_create(dpp::message(event.msg.channel_id, fmt::format("Prefix detected! Cmd: {} Args: (len = {}) {}", cmd, std::to_string(vstrings.size()), s)));
 			// }
 		}
 	});
+
+	bot.on_button_click([](const dpp::button_click_t & event) {
+        /* Button clicks are still interactions, and must be replied to in some form to
+         * prevent the "this interaction has failed" message from Discord to the user.
+         */
+        event.reply("You clicked: " + event.custom_id);
+    });
 
 	std::cout << "starting with version " << dpp::utility::version() << '\n';
 

@@ -13,4 +13,6 @@ void think(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void fail(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
+// void button(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
 #endif

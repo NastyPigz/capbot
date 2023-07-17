@@ -11,6 +11,8 @@ void unregister(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
+void bank(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
 void beg(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev);
@@ -28,5 +30,13 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 void share(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void sell_item(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void shop(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
+void banks(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 #endif

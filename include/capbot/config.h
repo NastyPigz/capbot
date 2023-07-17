@@ -3,7 +3,7 @@
 #define EPH_OR_NOT false
 
 #include <dpp/dpp.h>
-#include <dpp/fmt/format.h>
+#include <fmt/format.h>
 #include <map>
 #include <iostream>
 #include <iomanip>
@@ -43,6 +43,20 @@ inline const std::map<std::string, command_definition> cmds = {
     { "balance", {
         "Check your balance", balance, 1, {
             { dpp::command_option(dpp::co_user, "user", "Target user's balance", false) },
+        }
+    }},
+    { "bank", {
+        "Check your bank", bank, 1
+    }},
+    { "banks", {
+        "View avaliable banks", banks, 1, {
+            { dpp::command_option(dpp::co_integer, "type", "the bank you want to view.", false)
+                .add_choice(dpp::command_option_choice("default", 0))
+                .add_choice(dpp::command_option_choice("premium", 1))
+                .add_choice(dpp::command_option_choice("royal", 2))
+                .add_choice(dpp::command_option_choice("meme", 3))
+                .add_choice(dpp::command_option_choice("ussr", 4))
+            }
         }
     }},
     { "beg", { "pls give me money I'm begging you", beg, 15 }},
@@ -138,6 +152,36 @@ inline const std::map<std::string, command_definition> cmds = {
             }
         }
     }},
+    {"buy", {
+        "Buys an item", buy_item, 1, {
+            {
+                dpp::command_option(dpp::co_string, "item", "Name of item", true)
+            },
+            {
+                dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
+            }
+        }
+    }},
+    {"sell", {
+        "Sells an item (half price)", sell_item, 1, {
+            {
+                dpp::command_option(dpp::co_string, "item", "Name of item", true)
+            },
+            {
+                dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
+            }
+        }
+    }},
+    {"shop", {
+        "Views shop", shop, 1, {
+            {
+                dpp::command_option(dpp::co_string, "item", "Name of item", false)
+            },
+            {
+                dpp::command_option(dpp::co_integer, "page", "page number", false)
+            }
+        }
+    }}
 };
 
 #endif

@@ -22,3 +22,17 @@ void help(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 void think(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT);
 }
+
+// void button(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+//     ev.reply(
+//         dpp::message("this text has buttons").add_component(
+//             dpp::component().add_component(
+//                 dpp::component().set_label("Click me!").
+//                 set_type(dpp::cot_button).
+//                 set_emoji(u8"😄").
+//                 set_style(dpp::cos_danger).
+//                 set_id("myid")
+//             )
+//         )
+//     );
+// }

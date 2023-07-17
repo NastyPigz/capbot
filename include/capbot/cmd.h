@@ -2,7 +2,7 @@
 #define CMD_H_
 
 #include <dpp/dpp.h>
-#include <dpp/fmt/format.h>
+#include <fmt/format.h>
 #include <iostream>
 #include "db/crud.h"
 #include "cooldown.h"

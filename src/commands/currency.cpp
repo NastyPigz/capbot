@@ -2,6 +2,7 @@
 
 #include "capbot/cmd.h"
 #include "capbot/config.h"
+#include "capbot/essentials.h"
 #include "utils.hpp"
 
 void _register(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
@@ -105,6 +106,87 @@ void beg(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 					ev.edit_response(ephmsg("You are not registered yet!"));
 				}
 			});
+	});
+}
+
+void bank(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		getbal_then(
+			ctx.maindb, std::to_string(ev.command.usr.id),
+			[ev](json usr_data) {
+				ev.edit_response(dpp::message().add_embed(
+					dpp::embed()
+						.set_title(fmt::format("{}'s bank data", ev.command.usr.username))
+						.set_description(fmt::format("{} | {}\nBank Company: {}",
+							FormatWithCommas(usr_data["bank"].get<int64_t>()),
+							FormatWithCommas(usr_data["bank_max"].get<int64_t>()),
+							get_bank_name(usr_data["bank_type"].get<int64_t>())
+						))
+						.set_color(get_bank_colour(usr_data["bank_type"].get<int64_t>()))));
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "bank");
+				ev.edit_response(ephmsg("You has not registered yet!"));
+			});
+	});
+}
+
+void banks(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ev](const dpp::confirmation_callback_t &v) {
+		int64_t type = -1;
+		if (std::holds_alternative<int64_t>(ev.get_parameter("type"))) {
+			type = std::get<int64_t>(ev.get_parameter("type"));
+		}
+		switch (type) {
+			case -1:
+				ev.edit_response(ephmsg("")
+					.add_embed(
+						dpp::embed()
+							.set_title("Banks")
+							.set_description("Available banks are: `default`, `premium`, `royal`, `meme`, `USSR`")
+					));
+				break;
+			case 0:
+				ev.edit_response(ephmsg("")
+					.add_embed(
+						dpp::embed()
+							.set_title("Default")
+							.set_description("Free of charge but you cannot get more space.")
+					));
+				break;
+			case 1:
+				ev.edit_response(ephmsg("")
+					.add_embed(
+						dpp::embed()
+							.set_title("Premium")
+							.set_description("Pay 5,000 to unlock. Every deposit must be lower than 200.")
+					));
+				break;
+			case 2:
+				ev.edit_response(ephmsg("")
+					.add_embed(
+						dpp::embed()
+							.set_title("Royal")
+							.set_description("Pay 25,000 to unlock. Every deposiit and withdraw must be higher than 2500.")
+					));
+				break;
+			case 3:
+				ev.edit_response(ephmsg("")
+					.add_embed(
+						dpp::embed()
+							.set_title("Meme")
+							.set_description("Pay 20,000 to unlock. Every deposit there's a 5% chance you will get trolled and lose the amount.")
+					));
+				break;
+			case 4:
+				ev.edit_response(ephmsg("")
+					.add_embed(
+						dpp::embed()
+							.set_title("USSR")
+							.set_description("Free or charge, but you share half of your money each deposit.")
+					));
+				break;
+		}
 	});
 }
 
@@ -353,9 +435,7 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 						return ev.edit_response(ephmsg("You can have 1 billion bitcoins at max."));
 					}
 					if (balance < exchange_rate * amount) {
-						return ev.edit_response(ephmsg(fmt::format(
-							"You're broke mg it costs {}",
-							FormatWithCommas(amount * exchange_rate))));
+						return ev.edit_response(ephmsg(fmt::format("You're broke mg it costs {}", FormatWithCommas(amount * exchange_rate))));
 					}
 					ctx.maindb.patch(
 						std::to_string(ev.command.usr.id),
@@ -462,7 +542,7 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 void share(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	// tax hehehehaw
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0) {
+		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
 			return ev.edit_response(ephmsg("Share at least 1 coin bro"));
 		}
 		getbal_then(
@@ -470,7 +550,12 @@ void share(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 			[ctx, ev](json pl) {
 				int64_t balance = pl["bal"].get<int64_t>();
 				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
-				if (balance < amount) {
+				if (amount == -1) {
+                    if (balance == 0) {
+                        return ev.edit_response(ephmsg("You have no money in your wallet xd"));
+                    }
+                    amount = balance;
+                } else if (balance < amount) {
 					return ev.edit_response(ephmsg("You're broke mg"));
 				}
 				dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
@@ -506,24 +591,25 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 		if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
 			return ev.edit_response(ephmsg("That item doesn't exist"));
 		}
-		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0) {
+		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
 			return ev.edit_response(ephmsg("Share at least 1 item bro"));
 		}
 		getbal_then(
 			ctx.maindb, std::to_string(ev.command.usr.id),
 			[ctx, ev](json pl) {
-				bool edit = false;
 				int64_t balance = 0;
 				if (!pl["inv"].contains(std::get<std::string>(ev.get_parameter("item")))) {
-					edit = true;
+					chkinv(ctx.maindb, pl["inv"], std::to_string(ev.command.usr.id));
 				} else {
 					balance = pl["inv"][std::get<std::string>(ev.get_parameter("item"))];
 				}
 				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
-				if (balance < amount) {
-					if (edit) {
-						chkinv(ctx.maindb, pl["inv"], std::to_string(ev.command.usr.id));
-					}
+                if (amount == -1) {
+                    if (balance == 0) {
+                        return ev.edit_response(ephmsg("You have none of that lol"));
+                    }
+                    amount = balance;
+                } else if (balance < amount) {
 					return ev.edit_response(ephmsg("You're broke mg"));
 				}
 				dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
@@ -548,9 +634,6 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 							ev.edit_response(ephmsg("They have not registered yet!"));
 						}
 					});
-				if (edit) {
-					chkinv(ctx.maindb, pl["inv"], std::to_string(ev.command.usr.id));
-				}
 			},
 			[ctx, ev]() {
 				ctx.cooldowns.reset_trigger(ev.command.usr.id, "shareitem");
@@ -559,4 +642,205 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	});
 }
 
-void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {}
+void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		std::string item = std::get<std::string>(ev.get_parameter("item"));
+		if (!shop_items.contains(item)) {
+			return ev.edit_response(ephmsg("That item doesn't exist"));
+		}
+		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
+			return ev.edit_response(ephmsg("Use at least 1 item bro"));
+		}
+		getbal_then(
+			ctx.maindb, std::to_string(ev.command.usr.id),
+			[ctx, ev, item](json pl) {
+				int64_t balance = 0;
+				if (!pl["inv"].contains(item)) {
+					chkinv(ctx.maindb, pl["inv"], std::to_string(ev.command.usr.id));
+				} else {
+					balance = pl["inv"][std::get<std::string>(ev.get_parameter("item"))];
+				}
+				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
+                if (amount == -1) {
+                    if (balance == 0) {
+                        return ev.edit_response(ephmsg("You have none of that lol"));
+                    }
+                    amount = balance;
+                } else if (balance < amount) {
+					return ev.edit_response(ephmsg("You don't have enough."));
+				}
+                ctx.maindb.patch(
+					std::to_string(ev.command.usr.id),
+					{{"increment",
+					    {
+                            {"inv." + std::get<std::string>(ev.get_parameter("item")), -amount},
+                        }
+                    }},
+					[ctx, ev, amount, item](const dpp::http_request_completion_t &evt) {
+						if (evt.status == 200) {
+							find_use(std::to_string(ev.command.usr.id), item);
+							ev.edit_response(ephmsg(fmt::format("Used {} of {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"])));
+						} else {
+							ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+							ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+						}
+					});
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+				ev.edit_response(ephmsg("You have not registered yet!"));
+			});
+	});
+}
+
+void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
+			return ev.edit_response(ephmsg("That item doesn't exist"));
+		}
+		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
+			return ev.edit_response(ephmsg("Buy at least 1 item bro"));
+		}
+		getbal_then(
+			ctx.maindb, std::to_string(ev.command.usr.id),
+			[ctx, ev](json pl) {
+				int64_t balance = pl["bal"].get<int64_t>();
+				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
+                if (!shop_items[std::get<std::string>(ev.get_parameter("item"))]["purchasable"].get<bool>()) {
+                    return ev.edit_response(ephmsg("This item is not for sale"));
+                }
+                int64_t price = shop_items[std::get<std::string>(ev.get_parameter("item"))]["price"].get<int64_t>();
+                if (amount == -1) {
+                    // automatic floor lets gooo
+                    amount = balance / price;
+                    if (amount == 0) {
+                        return ev.edit_response(ephmsg("You can't afford 1 of that."));
+                    }
+                } else if (balance < price * amount) {
+					return ev.edit_response(ephmsg("You're broke mg"));
+				}
+                ctx.maindb.patch(
+					std::to_string(ev.command.usr.id),
+					{{"increment",
+					    {
+                            {"inv." + std::get<std::string>(ev.get_parameter("item")), amount},
+                            {"bal", -amount * price}
+                        }
+                    }},
+					[ctx, ev, amount, price](const dpp::http_request_completion_t &evt) {
+						if (evt.status == 200) {
+							ev.edit_response(ephmsg(fmt::format("Bought {} of {} for {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"], amount * price)));
+						} else {
+							ctx.cooldowns.reset_trigger(ev.command.usr.id, "buy");
+							ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
+						}
+					});
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "buy");
+				ev.edit_response(ephmsg("You have not registered yet!"));
+			});
+    });
+}
+
+void sell_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+    ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+        if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
+			return ev.edit_response(ephmsg("That item doesn't exist"));
+		}
+		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
+			return ev.edit_response(ephmsg("Sell at least 1 item bro"));
+		}
+		getbal_then(
+			ctx.maindb, std::to_string(ev.command.usr.id),
+			[ctx, ev](json pl) {
+				int64_t balance = 0;
+				if (!pl["inv"].contains(std::get<std::string>(ev.get_parameter("item")))) {
+					chkinv(ctx.maindb, pl["inv"], std::to_string(ev.command.usr.id));
+				} else {
+					balance = pl["inv"][std::get<std::string>(ev.get_parameter("item"))];
+				}
+				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
+                if (amount == -1) {
+                    if (balance == 0) {
+                        return ev.edit_response(ephmsg("You have none of that lol"));
+                    }
+                    amount = balance;
+                } else if (balance < amount) {
+					return ev.edit_response(ephmsg("You're broke mg"));
+				}
+                int64_t price = shop_items[std::get<std::string>(ev.get_parameter("item"))]["price"].get<int64_t>() * 0.5;
+                ctx.maindb.patch(
+					std::to_string(ev.command.usr.id),
+					{{"increment",
+					    {
+                            {"inv." + std::get<std::string>(ev.get_parameter("item")), -amount},
+                            {"bal", amount * price}
+                        }
+                    }},
+					[ctx, ev, amount, price](const dpp::http_request_completion_t &evt) {
+						if (evt.status == 200) {
+							ev.edit_response(ephmsg(fmt::format("Sold {} of {} for {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"], amount * price)));
+						} else {
+							ctx.cooldowns.reset_trigger(ev.command.usr.id, "sell");
+							ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
+						}
+					});
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "sell");
+				ev.edit_response(ephmsg("You have not registered yet!"));
+			});
+    });
+}
+
+void shop(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ev](const dpp::confirmation_callback_t &v) {
+		if (std::holds_alternative<std::string>(ev.get_parameter("item"))) {
+			std::string item = std::get<std::string>(ev.get_parameter("item"));
+			json it = shop_items[item];
+			ev.edit_response(ephmsg("").add_embed(dpp::embed()
+				.set_title(it["display"].get<std::string>())
+				.set_description(it["description"].get<std::string>())
+				.set_color(dpp::colors::red)
+				.set_thumbnail(it["thumbnail"].get<std::string>())
+				.add_field(
+					"Price",
+					std::to_string(it["price"].get<int64_t>()),
+					true
+				)
+				.add_field(
+					"Showing in shop",
+					it["showing"].get<bool>() ? "true" : "false",
+					true
+				)
+				.add_field(
+					"Purchasable",
+					it["purchasable"].get<bool>() ? "true" : "false",
+					false
+				)
+				.add_field(
+					"Sellable",
+					fmt::format("{} \n__Note:__ sell price is half", it["sellable"].get<bool>() ? "true" : "false"),
+					false
+				)
+				.add_field(
+					"Usable",
+					it["usable"].get<bool>() ? "true" : "false",
+					false
+				)
+				.add_field(
+					"usable IDs (for message commands)",
+					fmt::format("`{}`", join_vec(it["name"].get<std::vector<std::string>>(), "`, `")),
+					false
+				)
+			));
+		} else {
+			int64_t page = 1;
+			if (std::holds_alternative<int64_t>(ev.get_parameter("page"))) {
+				page = std::get<int64_t>(ev.get_parameter("page"));
+			}
+			ev.edit_response(getshop(page));
+		}
+	});
+}

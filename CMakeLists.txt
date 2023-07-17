@@ -1,11 +1,19 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.14)
+
+include(FetchContent)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(BOT_NAME "capbot")
 
 project(${BOT_NAME})
-# aux_source_directory("src" coresrc)
-# aux_source_directory("src/db" dbsrc)
+
+FetchContent_Declare(fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(fmt)
+
+
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp")
 # message(STATUS "src: ${coresrc}\nsrc/db: ${dbsrc}")
 message(STATUS "src: ${SOURCE_FILES}")
@@ -45,6 +53,7 @@ target_link_libraries(${BOT_NAME}
     ${CMAKE_THREAD_LIBS_INIT}
     ${OPENSSL_CRYPTO_LIBRARY} 
     ${OPENSSL_SSL_LIBRARY}
+    fmt::fmt
 )
 
 if (DPP_FOUND)
