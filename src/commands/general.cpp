@@ -24,14 +24,14 @@ void think(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 }
 
 void shutdown(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-    ev.thinking(EPH_OR_NOT, [ev, ctx]() {
+    ev.thinking(EPH_OR_NOT, [ev, ctx](const dpp::confirmation_callback_t &v) {
         if (ev.command.usr.id == dpp::snowflake(763854419484999722)) {
-            ctx.bot->shutdown();
-            delete ctx.bot;
-            bot = nullptr;
+            ctx.bot.shutdown();
+            // delete ctx.bot;
+            // ctx.bot = nullptr;
             ev.edit_response(ephmsg("I hate women"));
         } else {
-            ev.edit_response(emphsg(":nerd:"));
+            ev.edit_response(ephmsg(":nerd:"));
         }
     });
 }

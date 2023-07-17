@@ -1,5 +1,6 @@
 #ifndef UTILS_H_
 #define UTILS_H_
+
 #include <dpp/dpp.h>
 #include <dpp/nlohmann/json.hpp>
 #include <map>
@@ -124,33 +125,42 @@ void getbal_then(const Db &maindb, std::string user_id, std::function<void(json)
 }
 
 uint32_t get_bank_colour(int type) {
+    uint32_t colour = 0;
     switch (type) {
         case 0:
-            return dpp::colors::black;
+            colour =  dpp::colors::black;
+            break;
         case 1:
-            return dpp::colors::red;
+            colour =  dpp::colors::red;
+            break;
         case 2:
-            return dpp::colors::vivid_violet;
+            colour = dpp::colors::vivid_violet;
+            break;
         case 3:
-            return dpp::colors::green;
+            colour = dpp::colors::green;
+            break;
         case 4:
-            return dpp::colors::tahiti_gold;
+            colour = dpp::colors::tahiti_gold;
+            break;
     }
+    return colour;
 }
 
 std::string get_bank_name(int type) {
+    std::string name = "";
     switch (type) {
         case 0:
-            return "Default";
+            name = "Default";
         case 1:
-            return "Premium";
+            name =  "Premium";
         case 2:
-            return "Royal";
+            name =  "Royal";
         case 3:
-            return "Meme";
+            name =  "Meme";
         case 4:
-            return "USSR";
+            name = "USSR";
     }
+    return name;
 }
 
 void find_use(std::string id, std::string item) {
