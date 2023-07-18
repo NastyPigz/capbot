@@ -212,10 +212,83 @@ void find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, st
                 }
             });
     } else if (item == "beef") {
-        
+        return ctx.maindb.patch(
+            user_id,
+            {{"increment",
+                {
+                    {"inv." + item, -amount},
+                    {"multi", amount}
+                }
+            }},
+            [ctx, ev, amount, item, user_id](const dpp::http_request_completion_t &evt) {
+                if (evt.status == 200) {
+                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier for 1 minute.", amount, shop_items[item]["display"].get<std::string>(), amount)));
+                    ctx.bot.start_timer([&ctx, user_id, item, amount](dpp::timer h) {
+                        ctx.maindb.patch(
+                            user_id,
+                            {{"increment",
+                                {
+                                    {"multi", -amount}
+                                }
+                            }},
+                            [](const dpp::http_request_completion_t &evt) {
+                                // luck bastard if this request failed
+                            });
+                        ctx.bot.stop_timer(h);
+                    }, 60);
+                } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+                }
+            });
     } else if (item == "cursed_beef") {
-
+        std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> distr(1, 10);
+        // it's actually 30% backfiring, we are going to say 40% to make it more intense
+        if (distr(gen) < 4) {
+            return ctx.maindb.patch(
+                user_id,
+                {{"increment",
+                    {
+                        {"inv." + item, -1},
+                    }
+                }},
+                [ctx, ev](const dpp::http_request_completion_t &evt) {
+                    if (evt.status == 200) {
+                        ev.edit_response("Ughhh!! Your balls are too itchy and you dropped your beef! Good luck next time.");
+                    } else {
+                        ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+                        ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+                    }
+                });
+        }
+        return ev.edit_response(
+            dpp::message("Who would you like to curse?").set_flags(dpp::m_ephemeral).add_component(
+                dpp::component().add_component(
+                    dpp::component().set_placeholder("Select who to curse").
+                        set_type(dpp::cot_user_selectmenu).
+                        set_id("curse_1")
+                )
+            )
+        );
     } else if (item == "horrorse_celery") {
+        return ctx.maindb.patch(
+            user_id,
+            {{"increment",
+                {
+                    {"inv." + item, -amount},
+                    {"multi", amount*100}
+                }
+            }},
+            [ctx, ev, amount, item, user_id](const dpp::http_request_completion_t &evt) {
+                if (evt.status == 200) {
+                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier PERMANENTLY.", amount*100, shop_items[item]["display"].get<std::string>(), amount)));
+                } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+                }
+            });
 
     } else {
 

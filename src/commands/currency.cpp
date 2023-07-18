@@ -651,7 +651,7 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 }
 
 void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+	ev.thinking(std::get<std::string>(ev.get_parameter("item")) == "cursed_beef" ? true : EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
 		std::string usable[] = {"bank_space", "coin_bag", "beef", "cursed_beef", "horrorse_celery"};
 		std::string item = std::get<std::string>(ev.get_parameter("item"));
 		std::string user_id = std::to_string(ev.command.usr.id);

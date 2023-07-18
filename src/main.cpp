@@ -338,10 +338,62 @@ int main() {
 	});
 
 	bot.on_button_click([](const dpp::button_click_t & event) {
-        /* Button clicks are still interactions, and must be replied to in some form to
+		// event.edit_original_response(ephmsg("Test123"));
+        event.reply("You clicked: " + event.custom_id);
+    });
+
+	bot.on_select_click([&maindb, &bot](const dpp::select_click_t & event) {
+        /* Select clicks are still interactions, and must be replied to in some form to
          * prevent the "this interaction has failed" message from Discord to the user.
          */
-        event.reply("You clicked: " + event.custom_id);
+		if (event.custom_id == "curse_1") {
+			return maindb.patch(std::to_string(event.command.usr.id),
+					{{"increment",
+						{
+							{"inv.cursed_beef", -1},
+						}
+					}},
+					[event, &maindb, &bot](const dpp::http_request_completion_t &evt) {
+						if (evt.status == 200) {
+							maindb.patch(event.values[0],
+								{{"increment",
+									{
+										{"multi", -5}
+									}
+								}},
+								[event, &maindb, &bot](const dpp::http_request_completion_t &evt) {
+									if (evt.status == 200) {
+										std::string user_id = event.values[0];
+										dpp::message msg("");
+										msg.id = event.command.message_id;
+										msg.channel_id = event.command.channel_id;
+										bot.message_edit(msg);
+										event.reply(fmt::format("Fuck you <@{}>! You are cursed.", user_id));
+										bot.start_timer([user_id, &maindb, &bot](dpp::timer h) {
+											maindb.patch(
+												user_id,
+												{{"increment",
+													{
+														{"multi", 5}
+													}
+												}},
+												[](const dpp::http_request_completion_t &evt) {
+													// unlucky bastard if this request failed
+												});
+											bot.stop_timer(h);
+										}, 30 * 60);
+									} else {
+										event.reply("Looks like god has decided to not curse this person!");
+									}
+								}
+							);
+						} else {
+							event.reply("Sorry buddy but we failed to charge you!");
+						}
+					}
+				);
+		}
+        event.reply("You clicked " + event.custom_id + " and chose: " + event.values[0]);
     });
 
 	std::cout << "starting with version " << dpp::utility::version() << '\n';
