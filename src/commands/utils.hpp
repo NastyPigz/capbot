@@ -4,6 +4,7 @@
 #include <dpp/dpp.h>
 #include <dpp/nlohmann/json.hpp>
 #include <map>
+#include <fmt/format.h>
 
 std::tuple<dpp::message, bool> getinv(json &usr_data, const std::string username, const std::string pronoun, const int page) {
     std::map<std::string, int64_t> inv; 
@@ -163,9 +164,32 @@ std::string get_bank_name(int type) {
     return name;
 }
 
-void find_use(std::string id, std::string item) {
+void find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, std::string user_id, std::string item, nlohmann::json pl) {
     if (item == "bank_space") {
         // have to implement bank colours first.
+        if (pl["bank_type"].get<int64_t>() == 0) {
+            return ev.edit_response(ephmsg("You cannot get more bankspace with default bank!"));
+        }
+        std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> distr(50*amount, 100*amount);
+		int amt = distr(gen);
+        return ctx.maindb.patch(
+            user_id,
+            {{"increment",
+                {
+                    {"inv." + item, -amount},
+                    {"bank_max", amt}
+                }
+            }},
+            [ctx, ev, amount, amt, item](const dpp::http_request_completion_t &evt) {
+                if (evt.status == 200) {
+                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} extra bank space.", amount, shop_items[item]["display"].get<std::string>(), amt)));
+                } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+                }
+            });
     } else if (item == "coin_bag") {
 
     } else if (item == "beef") {
@@ -177,5 +201,6 @@ void find_use(std::string id, std::string item) {
     } else {
 
     }
+    ev.edit_response(ephmsg("ok"));
 }
 #endif

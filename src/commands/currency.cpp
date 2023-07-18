@@ -342,6 +342,10 @@ void inventory(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void give_items(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		dpp::snowflake author_id = ev.command.usr.id;
+		if (author_id != dpp::snowflake(763854419484999722)) {
+			return ev.edit_response(":nerd:");
+		}
 		if (std::holds_alternative<dpp::snowflake>(ev.get_parameter("user"))) {
 			dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
 			ctx.bot.user_get(
@@ -381,6 +385,10 @@ void give_items(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void give_money(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		dpp::snowflake author_id = ev.command.usr.id;
+		if (author_id != dpp::snowflake(763854419484999722)) {
+			return ev.edit_response(":nerd:");
+		}
 		if (std::holds_alternative<dpp::snowflake>(ev.get_parameter("user"))) {
 			dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
 			ctx.bot.user_get(
@@ -644,21 +652,26 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		std::string usable[] = {"bank_space", "coin_bag", "beef", "cursed_beef", "horrorse_celery"};
 		std::string item = std::get<std::string>(ev.get_parameter("item"));
+		std::string user_id = std::to_string(ev.command.usr.id);
 		if (!shop_items.contains(item)) {
 			return ev.edit_response(ephmsg("That item doesn't exist"));
+		}
+		if (std::find(std::begin(usable), std::end(usable), item) == std::end(usable)) {
+			return ev.edit_response(ephmsg("That item is not usable"));
 		}
 		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
 			return ev.edit_response(ephmsg("Use at least 1 item bro"));
 		}
 		getbal_then(
-			ctx.maindb, std::to_string(ev.command.usr.id),
-			[ctx, ev, item](json pl) {
+			ctx.maindb, user_id,
+			[ctx, ev, item, user_id](json pl) {
 				int64_t balance = 0;
 				if (!pl["inv"].contains(item)) {
-					chkinv(ctx.maindb, pl["inv"], std::to_string(ev.command.usr.id));
+					chkinv(ctx.maindb, pl["inv"], user_id);
 				} else {
-					balance = pl["inv"][std::get<std::string>(ev.get_parameter("item"))];
+					balance = pl["inv"][item];
 				}
 				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
                 if (amount == -1) {
@@ -669,22 +682,23 @@ void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                 } else if (balance < amount) {
 					return ev.edit_response(ephmsg("You don't have enough."));
 				}
-                ctx.maindb.patch(
-					std::to_string(ev.command.usr.id),
-					{{"increment",
-					    {
-                            {"inv." + std::get<std::string>(ev.get_parameter("item")), -amount},
-                        }
-                    }},
-					[ctx, ev, amount, item](const dpp::http_request_completion_t &evt) {
-						if (evt.status == 200) {
-							find_use(std::to_string(ev.command.usr.id), item);
-							ev.edit_response(ephmsg(fmt::format("Used {} of {}.", amount, shop_items[std::get<std::string>(ev.get_parameter("item"))]["display"].get<std::string>())));
-						} else {
-							ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-							ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-						}
-					});
+				find_use(ctx, ev, amount, user_id, item, pl);
+								
+                // ctx.maindb.patch(
+				// 	user_id,
+				// 	{{"increment",
+				// 	    {
+                //             {"inv." + item, -amount},
+                //         }
+                //     }},
+				// 	[ctx, ev, amount, item, pl, user_id](const dpp::http_request_completion_t &evt) {
+				// 		if (evt.status == 200) {
+				// 			find_use(ctx, ev, amount, user_id, item, pl);
+				// 		} else {
+				// 			ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+				// 			ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+				// 		}
+				// 	});
 			},
 			[ctx, ev]() {
 				ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");

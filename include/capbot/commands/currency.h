@@ -35,6 +35,8 @@ void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void sell_item(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
+void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev);
+
 void shop(const CmdCtx ctx, const dpp::slashcommand_t &ev);
 
 void banks(const CmdCtx ctx, const dpp::slashcommand_t &ev);

@@ -172,6 +172,16 @@ inline const std::map<std::string, command_definition> cmds = {
             }
         }
     }},
+    {"use", {
+        "Use an item", use_item, 1, {
+            {
+                dpp::command_option(dpp::co_string, "item", "Name of item", true)
+            },
+            {
+                dpp::command_option(dpp::co_integer, "amount", "amount of items", true)
+            }
+        }
+    }},
     {"shop", {
         "Views shop", shop, 1, {
             {
