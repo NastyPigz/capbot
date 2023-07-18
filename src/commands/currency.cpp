@@ -683,22 +683,6 @@ void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 					return ev.edit_response(ephmsg("You don't have enough."));
 				}
 				find_use(ctx, ev, amount, user_id, item, pl);
-								
-                // ctx.maindb.patch(
-				// 	user_id,
-				// 	{{"increment",
-				// 	    {
-                //             {"inv." + item, -amount},
-                //         }
-                //     }},
-				// 	[ctx, ev, amount, item, pl, user_id](const dpp::http_request_completion_t &evt) {
-				// 		if (evt.status == 200) {
-				// 			find_use(ctx, ev, amount, user_id, item, pl);
-				// 		} else {
-				// 			ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-				// 			ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-				// 		}
-				// 	});
 			},
 			[ctx, ev]() {
 				ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
