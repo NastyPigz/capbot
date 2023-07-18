@@ -172,7 +172,7 @@ void find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, st
         }
         std::random_device rd;
 		std::mt19937 gen(rd());
-		std::uniform_int_distribution<> distr(50*amount, 100*amount);
+		std::uniform_int_distribution<> distr(25*amount, 50*amount);
 		int amt = distr(gen);
         return ctx.maindb.patch(
             user_id,
@@ -191,9 +191,28 @@ void find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, st
                 }
             });
     } else if (item == "coin_bag") {
-
+        std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> distr(100*amount, 150*amount);
+        int amt = distr(gen);
+        return ctx.maindb.patch(
+            user_id,
+            {{"increment",
+                {
+                    {"inv." + item, -amount},
+                    {"bal", amt}
+                }
+            }},
+            [ctx, ev, amount, amt, item](const dpp::http_request_completion_t &evt) {
+                if (evt.status == 200) {
+                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} coins from the bag.", amount, shop_items[item]["display"].get<std::string>(), amt)));
+                } else {
+                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+                }
+            });
     } else if (item == "beef") {
-
+        
     } else if (item == "cursed_beef") {
 
     } else if (item == "horrorse_celery") {
