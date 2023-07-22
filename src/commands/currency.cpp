@@ -46,7 +46,7 @@ void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 					ev.edit_response(dpp::message().add_embed(
 						dpp::embed()
 							.set_title(fmt::format("{}'s balance", ev.command.usr.username))
-							.add_field("Value", usr_data.dump(4))
+							// .add_field("Value", usr_data.dump(4))
 							.add_field("Wallet", FormatWithCommas(usr_data["bal"].get<int64_t>()), true)
 							.add_field(
 								"Bank",
@@ -69,7 +69,7 @@ void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 						ev.edit_response(dpp::message().add_embed(
 							dpp::embed()
 								.set_title(fmt::format("{}'s balance", username))
-								.add_field("Value", usr_data.dump(4))
+								// .add_field("Value", usr_data.dump(4))
 								.add_field("Wallet", FormatWithCommas(usr_data["bal"].get<int64_t>()), true)
 								.add_field(
 									"Bank",
@@ -88,23 +88,114 @@ void balance(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void beg(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		// add multiplier later
-		std::uniform_int_distribution<> distr(1, 10);
-		int amt = distr(gen);
-		ctx.maindb.patch(
-			std::to_string(ev.command.usr.id), {{"increment", {{"bal", amt}}}},
-			[ctx, ev, amt](const dpp::http_request_completion_t &evt) {
-				if (evt.status == 200) {
-					ev.edit_response(ephmsg("").add_embed(
-						dpp::embed()
-							.set_title("CapitalismBot walked out of a shop and gave you a few changes!")
-							.set_description(fmt::format("You received: {}", FormatWithCommas(amt)))));
-				} else {
-					ctx.cooldowns.reset_trigger(ev.command.usr.id, "beg");
-					ev.edit_response(ephmsg("You are not registered yet!"));
+		getbal_then(
+			ctx.maindb, std::to_string(ev.command.usr.id),
+			[ev, ctx](json pl) {
+				std::string user_id = std::to_string(ev.command.usr.id);
+				int level = pl["exp"].get<int64_t>() / 100;
+				// maximum 1000 levels worth of multiplier, which is 20%
+				level = std::min(level, 1000);
+				int multi = pl["multi"].get<int64_t>() + level / 50;
+				// maximum 100% multiplier
+				multi = std::min(multi, 100);
+				if (pl["multi"].get<int64_t>() < 0) {
+					// negative multiplier glitch bec of cursed beef
+					ctx.maindb.patch(user_id, {
+						{"set", {
+							{"multi", 0}
+						}}
+					});
+					multi = 0;
 				}
+				multi += pl["inv"]["horrorse_celery"].get<int64_t>() * 100;
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				// add multiplier later
+				std::uniform_int_distribution<> distr(1, 10);
+				int amt = distr(gen) * (1 + multi / 100);
+				ctx.maindb.patch(
+					std::to_string(ev.command.usr.id), {{"increment", {{"bal", amt}}}},
+					[ctx, ev, amt](const dpp::http_request_completion_t &evt) {
+						if (evt.status == 200) {
+							ev.edit_response(ephmsg("").add_embed(
+								dpp::embed()
+									.set_title("CapitalismBot walked out of a shop and gave you a few changes!")
+									.set_description(fmt::format("You received: {}", FormatWithCommas(amt)))));
+						} else {
+							ctx.cooldowns.reset_trigger(ev.command.usr.id, "beg");
+							ev.edit_response(ephmsg("You are not registered yet!"));
+						}
+					});
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "bank");
+				ev.edit_response(ephmsg("You has not registered yet!"));
+			});
+	});
+}
+
+void mine(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		getbal_then(
+			ctx.maindb, std::to_string(ev.command.usr.id),
+			[ev, ctx](json pl) {
+				std::string user_id = std::to_string(ev.command.usr.id);
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				std::uniform_int_distribution<> distr(1, 5);
+				// 20% dying but we're gonna say 40% to increase tension
+				if (distr(gen) < 2 && user_id != "705462078613356625") {
+					return ctx.maindb.patch(
+						std::to_string(ev.command.usr.id), {{"set", {{"bal", 0}}}},
+						[ctx, ev](const dpp::http_request_completion_t &evt) {
+							if (evt.status == 200) {
+								ev.edit_response(ephmsg("").add_embed(
+									dpp::embed()
+										.set_title("You died!")
+										.set_description("You lost all your money.")
+										.set_color(dpp::colors::red)));
+							} else {
+								ctx.cooldowns.reset_trigger(ev.command.usr.id, "mine");
+								ev.edit_response(ephmsg("You are not registered yet!"));
+							}
+						});
+				}
+				int level = pl["exp"].get<int64_t>() / 100;
+				// maximum 1000 levels worth of multiplier, which is 20%
+				level = std::min(level, 1000);
+				int multi = pl["multi"].get<int64_t>() + level / 50;
+				// maximum 100% multiplier
+				multi = std::min(multi, 100);
+				if (pl["multi"].get<int64_t>() < 0) {
+					// negative multiplier glitch bec of cursed beef
+					ctx.maindb.patch(user_id, {
+						{"set", {
+							{"multi", 0}
+						}}
+					});
+					multi = 0;
+				}
+				multi += pl["inv"]["horrorse_celery"].get<int64_t>() * 100;
+				// add multiplier later
+				std::uniform_int_distribution<> rng(100, 200);
+				int amt = rng(gen) * (1 + multi / 100);
+				ctx.maindb.patch(
+					std::to_string(ev.command.usr.id), {{"increment", {{"bal", amt}}}},
+					[ctx, ev, amt](const dpp::http_request_completion_t &evt) {
+						if (evt.status == 200) {
+							ev.edit_response(ephmsg("").add_embed(
+								dpp::embed()
+									.set_title("CapitalismBot walked out of a shop and gave you a few changes!")
+									.set_description(fmt::format("You received: {}", FormatWithCommas(amt)))));
+						} else {
+							ctx.cooldowns.reset_trigger(ev.command.usr.id, "beg");
+							ev.edit_response(ephmsg("You are not registered yet!"));
+						}
+					});
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "bank");
+				ev.edit_response(ephmsg("You has not registered yet!"));
 			});
 	});
 }
@@ -209,12 +300,16 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 				if (amount == -1) {
 					damt = cur_bal > bank_left ? bank_left : cur_bal;
 				}
+				// cooldown will not be reset because it's their fault for invalid input
 				if (cur_bal < damt) {
+					// ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
 					ev.edit_response(ephmsg("You do not have that much money in your wallet"));
 				} else if (bank_left < damt) {
+					// ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
 					ev.edit_response(ephmsg("You cannot hold that much money"));
 				} else if (cur_bal == 0) {
 					// prevent them from typing -1 and making a request
+					// ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
 					ev.edit_response(ephmsg("You are broke my guy"));
 				} else {
 					ctx.maindb.patch(
@@ -541,7 +636,7 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 				std::to_string(exchange_rate),
 				std::to_string(60 - ctx.btc_timer))));
 		} else if (cmd_data.options[0].name == "reset") {
-			exchange_rate = 50000;
+			exchange_rate = 10000;
 			ev.edit_response(ephmsg("ok"));
 		}
 	});
@@ -553,10 +648,15 @@ void share(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
 			return ev.edit_response(ephmsg("Share at least 1 coin bro"));
 		}
+		dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
+		if (user_id == ev.command.usr.id) {
+			return ev.edit_response(ephmsg("You can't share money with yourself."));
+		}
 		getbal_then(
 			ctx.maindb, std::to_string(ev.command.usr.id),
-			[ctx, ev](json pl) {
+			[ctx, ev, user_id](json pl) {
 				int64_t balance = pl["bal"].get<int64_t>();
+				bool pog = pl["badges"]["Pog"].get<bool>();
 				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
 				if (amount == -1) {
                     if (balance == 0) {
@@ -566,19 +666,16 @@ void share(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
                 } else if (balance < amount) {
 					return ev.edit_response(ephmsg("You're broke mg"));
 				}
-				dpp::snowflake user_id = std::get<dpp::snowflake>(ev.get_parameter("user"));
-				if (user_id == ev.command.usr.id) {
-					return ev.edit_response(ephmsg("You can't share money with yourself."));
-				}
+				amount *= (pog ? 1 : 0.85);
 				ctx.maindb.patch(
 					std::to_string(user_id), {{"increment", {{"bal", amount}}}},
-					[ctx, ev, amount](const dpp::http_request_completion_t &evt) {
+					[ctx, ev, amount, pog](const dpp::http_request_completion_t &evt) {
 						if (evt.status == 200) {
 							ctx.maindb.patch(
 								std::to_string(ev.command.usr.id),
 								{{"increment", {{"bal", -amount}}}},
-								[ev, amount](auto _) {
-									ev.edit_response(ephmsg(fmt::format("{} coin shared.", amount)));
+								[ev, amount, pog](auto _) {
+									ev.edit_response(ephmsg(fmt::format("{} coin shared{}.", amount, (pog ? ", and you're pog so you get NO TAX" : " after a 15% tax rate"))));
 								});
 						} else {
 							ctx.cooldowns.reset_trigger(ev.command.usr.id, "share");
@@ -652,16 +749,20 @@ void share_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(std::get<std::string>(ev.get_parameter("item")) == "cursed_beef" ? true : EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-		std::string usable[] = {"bank_space", "coin_bag", "beef", "cursed_beef", "horrorse_celery"};
+		std::string usable[] = {"bank_space", "coin_bag", "beef", "cursed_beef"};
 		std::string item = std::get<std::string>(ev.get_parameter("item"));
 		std::string user_id = std::to_string(ev.command.usr.id);
-		if (!shop_items.contains(item)) {
-			return ev.edit_response(ephmsg("That item doesn't exist"));
-		}
+		// not possible
+		// if (!shop_items.contains(item)) {
+		// 	ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+		// 	return ev.edit_response(ephmsg("That item doesn't exist"));
+		// }
 		if (std::find(std::begin(usable), std::end(usable), item) == std::end(usable)) {
+			ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
 			return ev.edit_response(ephmsg("That item is not usable"));
 		}
 		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
+			// ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
 			return ev.edit_response(ephmsg("Use at least 1 item bro"));
 		}
 		getbal_then(
@@ -693,8 +794,13 @@ void use_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-        if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
-			return ev.edit_response(ephmsg("That item doesn't exist"));
+		// not possible
+        // if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
+		// 	return ev.edit_response(ephmsg("That item doesn't exist"));
+		// }
+		if (!shop_items[std::get<std::string>(ev.get_parameter("item"))]["purchasable"].get<bool>()) {
+			ctx.cooldowns.reset_trigger(ev.command.usr.id, "buy");
+			return ev.edit_response(ephmsg("This item is not for sale."));
 		}
 		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
 			return ev.edit_response(ephmsg("Buy at least 1 item bro"));
@@ -704,15 +810,12 @@ void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 			[ctx, ev](json pl) {
 				int64_t balance = pl["bal"].get<int64_t>();
 				int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
-                if (!shop_items[std::get<std::string>(ev.get_parameter("item"))]["purchasable"].get<bool>()) {
-                    return ev.edit_response(ephmsg("This item is not for sale"));
-                }
                 int64_t price = shop_items[std::get<std::string>(ev.get_parameter("item"))]["price"].get<int64_t>();
                 if (amount == -1) {
                     // automatic floor lets gooo
                     amount = balance / price;
                     if (amount == 0) {
-                        return ev.edit_response(ephmsg("You can't afford 1 of that."));
+                        return ev.edit_response(ephmsg("You can't afford any of that."));
                     }
                 } else if (balance < price * amount) {
 					return ev.edit_response(ephmsg("You're broke mg"));
@@ -743,8 +846,14 @@ void buy_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 
 void sell_item(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
     ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-        if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
-			return ev.edit_response(ephmsg("That item doesn't exist"));
+		// not possible;
+        // if (!shop_items.contains(std::get<std::string>(ev.get_parameter("item")))) {
+		// 	ctx.cooldowns.reset_trigger(ev.command.usr.id, "sell");
+		// 	return ev.edit_response(ephmsg("That item doesn't exist"));
+		// }
+		if (!shop_items[std::get<std::string>(ev.get_parameter("item"))]["sellable"].get<bool>()) {
+			ctx.cooldowns.reset_trigger(ev.command.usr.id, "sell");
+			return ev.edit_response(ephmsg("You can't sell this buddy!"));
 		}
 		if (std::get<int64_t>(ev.get_parameter("amount")) <= 0 && std::get<int64_t>(ev.get_parameter("amount")) != -1) {
 			return ev.edit_response(ephmsg("Sell at least 1 item bro"));
@@ -840,5 +949,261 @@ void shop(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 			}
 			ev.edit_response(getshop(page));
 		}
+	});
+}
+
+void roll(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		std::string user_id = std::to_string(ev.command.usr.id);
+		int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
+		if (amount < 15 && amount != -1) {
+			return ev.edit_response(ephmsg("You need to bet at least 15 coins"));
+		}
+		getbal_then(
+			ctx.maindb, user_id,
+			[ctx, ev, user_id, amount](json pl) {
+				int64_t balance = pl["bal"].get<int64_t>();
+				int amount = amount;
+				if (amount == -1) {
+					if (balance < 15) {
+						return ev.edit_response(ephmsg("You don't even have 15 coins to start gambling."));
+					}
+                    amount = balance;
+                } else if (balance < amount) {
+					return ev.edit_response(ephmsg("You don't have enough."));
+				}
+				amount = std::min(500, amount);
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				std::uniform_int_distribution<> distr(1, 13);
+				int rand1 = distr(gen);
+				int rand2 = distr(gen);
+				if (rand1 > rand2) {
+					int level = pl["exp"].get<int64_t>() / 100;
+					// maximum 1000 levels worth of multiplier, which is 20%
+					level = std::min(level, 1000);
+					int multi = pl["multi"].get<int64_t>() + level / 50;
+					// maximum 100% multiplier
+					multi = std::min(multi, 100);
+					if (pl["multi"].get<int64_t>() < 0) {
+						// negative multiplier glitch bec of cursed beef
+						ctx.maindb.patch(user_id, {
+							{"set", {
+								{"multi", 0}
+							}}
+						});
+						multi = 0;
+					}
+					multi += pl["inv"]["horrorse_celery"].get<int64_t>() * 100;
+					std::uniform_int_distribution<> rng(amount / 2, amount);
+					int win_amt = (int)(rng(gen) * (double)(1 + (double)(multi / 100.0)));
+					// minimum earn 0.5 * (1 + multi/100)
+					// maximum earn 1 * (1 + multi/100)
+					ctx.maindb.patch(
+						user_id,
+						{{"increment",
+							{
+								{"bal", win_amt}
+							}
+						}},
+						[ctx, ev, win_amt, rand1, rand2](const dpp::http_request_completion_t &evt) {
+							if (evt.status == 200) {
+								ev.edit_response(ephmsg("").add_embed(
+									dpp::embed()
+										.set_title("You won.")
+										.set_description("Profit: " + FormatWithCommas(win_amt))
+										.set_color(dpp::colors::green)
+										.add_field("You", "Rolled `" + std::to_string(rand1) + "`")
+										.add_field("Capitalism", "Rolled `" + std::to_string(rand2) + "`")
+										));
+							} else {
+								ctx.cooldowns.reset_trigger(ev.command.usr.id, "roll");
+								ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
+							}
+					});
+				} else if (rand1 < rand2) {
+					ctx.maindb.patch(
+						user_id,
+						{{"increment",
+							{
+								{"bal", -amount}
+							}
+						}},
+						[ctx, ev, amount, rand1, rand2](const dpp::http_request_completion_t &evt) {
+							if (evt.status == 200) {
+								ev.edit_response(ephmsg("").add_embed(
+									dpp::embed()
+										.set_title("You lost.")
+										.set_description("Loss: " + std::to_string(amount))
+										.set_color(dpp::colors::red)
+										.add_field("You", "Rolled `" + std::to_string(rand1) + "`")
+										.add_field("Capitalism", "Rolled `" + std::to_string(rand2) + "`")
+										));
+							} else {
+								ctx.cooldowns.reset_trigger(ev.command.usr.id, "roll");
+								ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
+							}
+					});
+				} else {
+					ev.edit_response(ephmsg("").add_embed(
+						dpp::embed()
+							.set_title("You tied!")
+							.set_description("No money was withdrawn from your account.")
+							.add_field("You", "Rolled `" + std::to_string(rand1) + "`")
+							.add_field("Capitalism", "Rolled `" + std::to_string(rand2) + "`")
+							));
+				}
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "roll");
+				ev.edit_response(ephmsg("You have not registered yet!"));
+			});
+	});
+}
+
+void roulette(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		std::string user_id = std::to_string(ev.command.usr.id);
+		int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
+		if (amount < 50 && amount != -1) {
+			return ev.edit_response(ephmsg("You need to bet at least 50 coins"));
+		}
+		int64_t bet = std::get<int64_t>(ev.get_parameter("bet"));
+		if (bet > 12 || bet < 0) {
+			return ev.edit_response(ephmsg("To play roulette you must pick a bet number between 0 and 12."));
+		}
+		getbal_then(
+			ctx.maindb, user_id,
+			[ctx, ev, user_id, amount, bet](json pl) {
+				int64_t balance = pl["bal"].get<int64_t>();
+				int amount = amount;
+                if (amount == -1) {
+					if (balance < 50) {
+						return ev.edit_response("You don't even have 50 coins to start betting...");
+					}
+                    amount = balance;
+                } else if (balance < amount) {
+					return ev.edit_response(ephmsg("You don't have enough."));
+				}
+				amount = std::min(5000, amount);
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				std::uniform_int_distribution<> distr(0, 12);
+				int rand1 = distr(gen);
+				if (rand1 == bet) {
+					int level = pl["exp"].get<int64_t>() / 100;
+					// maximum 1000 levels worth of multiplier, which is 20%
+					level = std::min(level, 1000);
+					int multi = pl["multi"].get<int64_t>() + level / 50;
+					// maximum 100% multiplier
+					multi = std::min(multi, 100);
+					if (pl["multi"].get<int64_t>() < 0) {
+						// negative multiplier glitch bec of cursed beef
+						ctx.maindb.patch(user_id, {
+							{"set", {
+								{"multi", 0}
+							}}
+						});
+						multi = 0;
+					}
+					multi += pl["inv"]["horrorse_celery"].get<int64_t>() * 100;
+					std::uniform_int_distribution<> rng((bet == 0) ? (amount) : (amount / 2), (bet == 0) ? (amount*2) : (amount));
+					int win_amt = (int)(rng(gen) * (double)(1 + (double)(multi / 100.0)));
+					// minimum earn 0.5 * (1 + multi/100)
+					// maximum earn 1 * (1 + multi/100)
+					ctx.maindb.patch(
+						user_id,
+						{{"increment",
+							{
+								{"bal", win_amt}
+							}
+						}},
+						[ctx, ev, win_amt, rand1, bet](const dpp::http_request_completion_t &evt) {
+							if (evt.status == 200) {
+								ev.edit_response(ephmsg("").add_embed(
+									dpp::embed()
+										.set_title("You won!")
+										.set_description("Profit: " + FormatWithCommas(win_amt))
+										.set_color(dpp::colors::green)
+										.add_field("Results:", "Win number: `" + std::to_string(bet) + "`.")
+										.set_footer(dpp::embed_footer().set_text("Roulette will pick a number between 0 and 12"))
+										));
+							} else {
+								ctx.cooldowns.reset_trigger(ev.command.usr.id, "roulette");
+								ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
+							}
+					});
+				} else if ((rand1 % 2) == (bet % 2)) {
+					int level = pl["exp"].get<int64_t>() / 100;
+					// maximum 1000 levels worth of multiplier, which is 20%
+					level = std::min(level, 1000);
+					int multi = pl["multi"].get<int64_t>() + level / 50;
+					// maximum 100% multiplier
+					multi = std::min(multi, 100);
+					if (pl["multi"].get<int64_t>() < 0) {
+						// negative multiplier glitch bec of cursed beef
+						ctx.maindb.patch(user_id, {
+							{"set", {
+								{"multi", 0}
+							}}
+						});
+						multi = 0;
+					}
+					multi += pl["inv"]["horrorse_celery"].get<int64_t>() * 100;
+					std::uniform_int_distribution<> rng(amount / 8, amount / 4);
+					int win_amt = (int)(rng(gen) * (double)(1 + (double)(multi / 100.0)));
+					// minimum earn 0.5 * (1 + multi/100)
+					// maximum earn 1 * (1 + multi/100)
+					ctx.maindb.patch(
+						user_id,
+						{{"increment",
+							{
+								{"bal", win_amt}
+							}
+						}},
+						[ctx, ev, win_amt, rand1, bet](const dpp::http_request_completion_t &evt) {
+							if (evt.status == 200) {
+								ev.edit_response(ephmsg("").add_embed(
+									dpp::embed()
+										.set_title("You won! Same colour.")
+										.set_description("Profit: " + std::to_string(win_amt))
+										.set_color(dpp::colors::green)
+										.add_field("Results:", "Your bet: `" + std::to_string(bet) + "`. Win number: `" + std::to_string(rand1) + "`.")
+										.set_footer(dpp::embed_footer().set_text("Roullete will pick a number between 0 and 12"))
+										));
+							} else {
+								ctx.cooldowns.reset_trigger(ev.command.usr.id, "roulette");
+								ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
+							}
+					});
+				} else {
+					ctx.maindb.patch(
+						user_id,
+						{{"increment",
+							{
+								{"bal", -amount}
+							}
+						}},
+						[ctx, ev, amount, rand1, bet](const dpp::http_request_completion_t &evt) {
+							if (evt.status == 200) {
+								ev.edit_response(ephmsg("").add_embed(
+									dpp::embed()
+										.set_title("You lost.")
+										.set_description("Loss: " + std::to_string(amount))
+										.set_color(dpp::colors::red)
+										.add_field("Results:", "Your bet: `" + std::to_string(bet) + "`. Win number: `" + std::to_string(rand1) + "`.")
+										.set_footer(dpp::embed_footer().set_text("Roullete will pick a number between 0 and 12"))
+										));
+							} else {
+								ctx.cooldowns.reset_trigger(ev.command.usr.id, "roulette");
+								ev.edit_response(ephmsg("Something went wrong while processing your transaction, try again later."));
+							}
+					});
+				}
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "roulette");
+				ev.edit_response(ephmsg("You have not registered yet!"));
+			});
 	});
 }

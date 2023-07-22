@@ -272,24 +272,24 @@ void find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, st
                 )
             )
         );
-    } else if (item == "horrorse_celery") {
-        return ctx.maindb.patch(
-            user_id,
-            {{"increment",
-                {
-                    {"inv." + item, -amount},
-                    {"multi", amount*100}
-                }
-            }},
-            [ctx, ev, amount, item, user_id](const dpp::http_request_completion_t &evt) {
-                if (evt.status == 200) {
-                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier PERMANENTLY.", amount*100, shop_items[item]["display"].get<std::string>(), amount)));
-                } else {
-                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-                }
-            });
-
+    // horrose_celery is no longer usable starting from July 21st 2023
+    // } else if (item == "horrorse_celery") {
+    //     return ctx.maindb.patch(
+    //         user_id,
+    //         {{"increment",
+    //             {
+    //                 {"inv." + item, -amount},
+    //                 {"multi", amount*100}
+    //             }
+    //         }},
+    //         [ctx, ev, amount, item, user_id](const dpp::http_request_completion_t &evt) {
+    //             if (evt.status == 200) {
+    //                 ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier PERMANENTLY.", amount*100, shop_items[item]["display"].get<std::string>(), amount)));
+    //             } else {
+    //                 ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+    //                 ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+    //             }
+    //         });
     } else {
 
     }

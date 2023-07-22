@@ -60,6 +60,7 @@ inline const std::map<std::string, command_definition> cmds = {
         }
     }},
     { "beg", { "pls give me money I'm begging you", beg, 15 }},
+    { "mine", { "40% risk of dying and losing all your wallet money... but 60% big price", mine, 0}},
     { "deposit", {
         "place money into your bank", deposit, 5, {
             {
@@ -193,6 +194,23 @@ inline const std::map<std::string, command_definition> cmds = {
         }
     }},
     { "shutdown", { "Shuts off the bot", shutdown, 0 }},
+    { "roll", {
+        "Gambling command, 15 coins minimum and 500 maximum bet", roll, 15, {
+            {
+                dpp::command_option(dpp::co_integer, "amount", "amount to bet, 25 - 500", true)
+            }
+        }
+    }},
+    { "roulette", {
+        "Gambling command, 50 coins minimum and 5000 maximum bet", roulette, 15, {
+            {
+                dpp::command_option(dpp::co_integer, "amount", "amount to bet, 50 - 5000", true)
+            },
+            {
+                dpp::command_option(dpp::co_integer, "bet", "number between 0 and 12 to bet on", true)
+            }
+        }
+    }}
 };
 
 #endif

@@ -73,17 +73,19 @@ int main() {
 	int sec_left = 1;
 	bot.start_timer(
 		[&sec_left](dpp::timer timer) {
-			if (sec_left == 60) {
+			// every 30 minutes
+			if (sec_left == 60 * 30) {
 				std::random_device rd;
 				std::mt19937 gen(rd());
-				std::uniform_int_distribution<> rng(0, 9);
-				if (rng(gen) == 0) {
-					std::uniform_int_distribution<> distr(10000, 20000);
-					exchange_rate = distr(gen);
-				} else {
-					std::uniform_int_distribution<> distr(40000, 60000);
-					exchange_rate = distr(gen);
-				}
+				std::uniform_int_distribution<> rng(9500, 10500);
+				exchange_rate = rng(gen);
+				// if (rng(gen) == 0) {
+				// 	std::uniform_int_distribution<> distr(10000, 20000);
+				// 	exchange_rate = distr(gen);
+				// } else {
+				// 	std::uniform_int_distribution<> distr(40000, 60000);
+				// 	exchange_rate = distr(gen);
+				// }
 				sec_left = 1;
 			} else {
 				sec_left = sec_left + 1;
@@ -129,7 +131,7 @@ int main() {
 	});
 
 	bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb, &sec_left](const dpp::slashcommand_t& event) {
-		std::cout << sec_left << '\n';
+		// std::cout << sec_left << '\n';
 		std::string name = event.command.get_command_name();
 		if (cmds.find(name) != cmds.end()) {
 			int wait_time = cooldowns.seconds_to_wait(event.command.usr.id, name);
