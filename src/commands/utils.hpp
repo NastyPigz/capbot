@@ -54,10 +54,10 @@ std::tuple<dpp::message, bool> getinv(json &usr_data, const std::string username
             }
         }
         return std::make_tuple(ephmsg("")
-            .add_embed(dpp::embed()
-                .set_title(fmt::format("{}'s inventory", username))
-                .set_description(usr_data["inv"].dump(4))
-            )
+            // .add_embed(dpp::embed()
+            //     .set_title(fmt::format("{}'s inventory", username))
+            //     .set_description(usr_data["inv"].dump(4))
+            // )
             .add_embed(em),
             edit
         );

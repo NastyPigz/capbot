@@ -40,7 +40,7 @@ inline const json shop_items = R"({
         "name": ["puppy_pass", "puppy", "pass", "ppass", "puppypass"],
         "display": "<:puppytruegaymerpass:831923372249841664> Puppy Pass",
         "thumbnail": "https://cdn.discordapp.com/emojis/831923372249841664.png?v=1",
-        "price": 50000,
+        "price": 125000,
         "description": "with this special pass, you will never pay for hospital bills.",
         "showing": true,
         "purchasable": true,

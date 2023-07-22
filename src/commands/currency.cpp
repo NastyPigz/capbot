@@ -145,6 +145,25 @@ void mine(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 				std::uniform_int_distribution<> distr(1, 5);
 				// 20% dying but we're gonna say 40% to increase tension
 				if (distr(gen) < 2 && user_id != "705462078613356625") {
+					if (pl["inv"]["puppy_pass"].get<int64_t>() > 0) {
+						return ev.edit_response("You almost died... But puppy pass saved you!");
+					}
+					if (pl["inv"]["capitalism_blessing"].get<int64_t>() > 0) {
+						return ctx.maindb.patch(
+							std::to_string(ev.command.usr.id), {
+								{"increment", {
+									{"inv.capitalism_blessing", -1}
+								}}
+							},
+							[ctx, ev](const dpp::http_request_completion_t &evt) {
+								if (evt.status == 200) {
+									ev.edit_response(ephmsg("You almost died... But 1x capitalism blessing saved your life!"));
+								} else {
+									ctx.cooldowns.reset_trigger(ev.command.usr.id, "mine");
+									ev.edit_response(ephmsg("You are not registered yet!"));
+								}
+						});
+					}
 					return ctx.maindb.patch(
 						std::to_string(ev.command.usr.id), {{"set", {{"bal", 0}}}},
 						[ctx, ev](const dpp::http_request_completion_t &evt) {
