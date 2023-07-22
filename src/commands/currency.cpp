@@ -974,15 +974,15 @@ void shop(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 void roll(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
 		std::string user_id = std::to_string(ev.command.usr.id);
-		int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
-		if (amount < 15 && amount != -1) {
+		int64_t amnt = std::get<int64_t>(ev.get_parameter("amount"));
+		if (amnt < 15 && amnt != -1) {
 			return ev.edit_response(ephmsg("You need to bet at least 15 coins"));
 		}
 		getbal_then(
 			ctx.maindb, user_id,
-			[ctx, ev, user_id, amount](json pl) {
+			[ctx, ev, user_id, amnt](json pl) {
 				int64_t balance = pl["bal"].get<int64_t>();
-				int amount = amount;
+				int amount = amnt;
 				if (amount == -1) {
 					if (balance < 15) {
 						return ev.edit_response(ephmsg("You don't even have 15 coins to start gambling."));
@@ -1083,8 +1083,8 @@ void roll(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 void roulette(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
 		std::string user_id = std::to_string(ev.command.usr.id);
-		int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
-		if (amount < 50 && amount != -1) {
+		int64_t amnt = std::get<int64_t>(ev.get_parameter("amount"));
+		if (amnt < 50 && amnt != -1) {
 			return ev.edit_response(ephmsg("You need to bet at least 50 coins"));
 		}
 		int64_t bet = std::get<int64_t>(ev.get_parameter("bet"));
@@ -1093,9 +1093,9 @@ void roulette(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 		}
 		getbal_then(
 			ctx.maindb, user_id,
-			[ctx, ev, user_id, amount, bet](json pl) {
+			[ctx, ev, user_id, amnt, bet](json pl) {
 				int64_t balance = pl["bal"].get<int64_t>();
-				int amount = amount;
+				int amount = amnt;
                 if (amount == -1) {
 					if (balance < 50) {
 						return ev.edit_response("You don't even have 50 coins to start betting...");

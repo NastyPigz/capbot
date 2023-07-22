@@ -60,7 +60,7 @@ inline const std::map<std::string, command_definition> cmds = {
         }
     }},
     { "beg", { "pls give me money I'm begging you", beg, 15 }},
-    { "mine", { "40% risk of dying and losing all your wallet money... but 60% big price", mine, 0}},
+    { "mine", { "40% risk of dying and losing all your wallet money... but 60% big price", mine, 30}},
     { "deposit", {
         "place money into your bank", deposit, 5, {
             {
