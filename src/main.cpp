@@ -51,7 +51,7 @@ int main() {
 		}
 	});
 
-	dpp::snowflake author_id = 763854419484999722;
+	dpp::snowflake testers[] = {763854419484999722, 719249148624502824, 705462078613356625, 1004621611225325688, 761451726997422110, 532798408340144148};
 
 	init_all_items();
 
@@ -130,13 +130,15 @@ int main() {
 		std::cout << "Logged in as " << bot.me.username << "!\n";
 	});
 
-	bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb, &sec_left](const dpp::slashcommand_t& event) {
+	bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb, &sec_left, &testers](const dpp::slashcommand_t& event) {
 		// std::cout << sec_left << '\n';
 		std::string name = event.command.get_command_name();
 		if (cmds.find(name) != cmds.end()) {
 			int wait_time = cooldowns.seconds_to_wait(event.command.usr.id, name);
 			if (wait_time <= 0) {
-				cooldowns.trigger(event.command.usr.id, name);
+				if (std::find(std::begin(testers), std::end(testers), event.command.usr.id) == std::end(testers)) {
+					cooldowns.trigger(event.command.usr.id, name);
+				}
 				usersdb.patch(std::to_string(event.command.usr.id),
 							  {{"increment", {{"cmds", 1}}}},
 							  [&usersdb, event](

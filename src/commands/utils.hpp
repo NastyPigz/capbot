@@ -152,14 +152,19 @@ std::string get_bank_name(int type) {
     switch (type) {
         case 0:
             name = "Default";
+            break;
         case 1:
             name =  "Premium";
+            break;
         case 2:
             name =  "Royal";
+            break;
         case 3:
             name =  "Meme";
+            break;
         case 4:
             name = "USSR";
+            break;
     }
     return name;
 }

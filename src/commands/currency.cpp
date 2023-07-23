@@ -214,88 +214,206 @@ void mine(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 			},
 			[ctx, ev]() {
 				ctx.cooldowns.reset_trigger(ev.command.usr.id, "bank");
-				ev.edit_response(ephmsg("You has not registered yet!"));
+				ev.edit_response(ephmsg("You have not registered yet!"));
 			});
 	});
 }
 
 void bank(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
-		getbal_then(
-			ctx.maindb, std::to_string(ev.command.usr.id),
-			[ev](json usr_data) {
-				ev.edit_response(dpp::message().add_embed(
-					dpp::embed()
-						.set_title(fmt::format("{}'s bank data", ev.command.usr.username))
-						.set_description(fmt::format("{} | {}\nBank Company: {}",
-							FormatWithCommas(usr_data["bank"].get<int64_t>()),
-							FormatWithCommas(usr_data["bank_max"].get<int64_t>()),
-							get_bank_name(usr_data["bank_type"].get<int64_t>())
-						))
-						.set_color(get_bank_colour(usr_data["bank_type"].get<int64_t>()))));
-			},
-			[ctx, ev]() {
-				ctx.cooldowns.reset_trigger(ev.command.usr.id, "bank");
-				ev.edit_response(ephmsg("You has not registered yet!"));
-			});
-	});
-}
-
-void banks(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-	ev.thinking(EPH_OR_NOT, [ev](const dpp::confirmation_callback_t &v) {
-		int64_t type = -1;
-		if (std::holds_alternative<int64_t>(ev.get_parameter("type"))) {
-			type = std::get<int64_t>(ev.get_parameter("type"));
-		}
-		switch (type) {
-			case -1:
-				ev.edit_response(ephmsg("")
-					.add_embed(
+		dpp::command_interaction cmd_data = ev.command.get_command_interaction();
+		if (cmd_data.options[0].name == "profile") {
+			getbal_then(
+				ctx.maindb, std::to_string(ev.command.usr.id),
+				[ev](json usr_data) {
+					ev.edit_response(dpp::message().add_embed(
 						dpp::embed()
-							.set_title("Banks")
-							.set_description("Available banks are: `default`, `premium`, `royal`, `meme`, `USSR`")
-					));
-				break;
-			case 0:
-				ev.edit_response(ephmsg("")
-					.add_embed(
-						dpp::embed()
-							.set_title("Default")
-							.set_description("Free of charge but you cannot get more space.")
-					));
-				break;
-			case 1:
-				ev.edit_response(ephmsg("")
-					.add_embed(
-						dpp::embed()
-							.set_title("Premium")
-							.set_description("Pay 5,000 to unlock. Every deposit must be lower than 200.")
-					));
-				break;
-			case 2:
-				ev.edit_response(ephmsg("")
-					.add_embed(
-						dpp::embed()
-							.set_title("Royal")
-							.set_description("Pay 25,000 to unlock. Every deposiit and withdraw must be higher than 2500.")
-					));
-				break;
-			case 3:
-				ev.edit_response(ephmsg("")
-					.add_embed(
-						dpp::embed()
-							.set_title("Meme")
-							.set_description("Pay 20,000 to unlock. Every deposit there's a 5% chance you will get trolled and lose the amount.")
-					));
-				break;
-			case 4:
-				ev.edit_response(ephmsg("")
-					.add_embed(
-						dpp::embed()
-							.set_title("USSR")
-							.set_description("Free or charge, but you share half of your money each deposit.")
-					));
-				break;
+							.set_title(fmt::format("{}'s bank data", ev.command.usr.username))
+							.set_description(fmt::format("{} | {}\nBank Company: {}",
+								FormatWithCommas(usr_data["bank"].get<int64_t>()),
+								FormatWithCommas(usr_data["bank_max"].get<int64_t>()),
+								get_bank_name(usr_data["bank_type"].get<int64_t>())
+							))
+							.set_color(get_bank_colour(usr_data["bank_type"].get<int64_t>()))));
+				},
+				[ctx, ev]() {
+					ctx.cooldowns.reset_trigger(ev.command.usr.id, "bank");
+					ev.edit_response(ephmsg("You have not registered yet!"));
+				});
+		} else if (cmd_data.options[0].name == "view") {
+			int64_t type = -1;
+			if (std::holds_alternative<int64_t>(ev.get_parameter("type"))) {
+				type = std::get<int64_t>(ev.get_parameter("type"));
+			}
+			switch (type) {
+				case -1:
+					ev.edit_response(ephmsg("")
+						.add_embed(
+							dpp::embed()
+								.set_title("Banks")
+								.set_description("Available banks are: `default`, `premium`, `royal`, `meme`, `USSR`")
+						));
+					break;
+				case 0:
+					ev.edit_response(ephmsg("")
+						.add_embed(
+							dpp::embed()
+								.set_title("Default")
+								.set_description("Free of charge but you cannot get more space.")
+						));
+					break;
+				case 1:
+					ev.edit_response(ephmsg("")
+						.add_embed(
+							dpp::embed()
+								.set_title("Premium")
+								.set_description("Pay 5,000 to unlock. Every deposit must be lower than 200.")
+						));
+					break;
+				case 2:
+					ev.edit_response(ephmsg("")
+						.add_embed(
+							dpp::embed()
+								.set_title("Royal")
+								.set_description("Pay 25,000 to unlock. Every deposit must be higher than 2500.")
+						));
+					break;
+				case 3:
+					ev.edit_response(ephmsg("")
+						.add_embed(
+							dpp::embed()
+								.set_title("Meme")
+								.set_description("Pay 20,000 to unlock. Every deposit there's a 5% chance you will get trolled and lose the amount.")
+						));
+					break;
+				case 4:
+					ev.edit_response(ephmsg("")
+						.add_embed(
+							dpp::embed()
+								.set_title("USSR")
+								.set_description("Free or charge, but you share half of your money each deposit.")
+						));
+					break;
+			}
+		} else { // buy
+			// ev.edit_response("Coming soon");
+			getbal_then(
+				ctx.maindb, std::to_string(ev.command.usr.id),
+				[ev, ctx](json pl) {
+					int64_t type = std::get<int64_t>(ev.get_parameter("type"));
+					if (pl["bank_type"].get<int64_t>() == type) {
+						return ev.edit_response(ephmsg("You already have this bank!"));
+					}
+					// since the option is limited, no need to error trap
+					switch (type) {
+						case 0:
+							// switch back to default
+							if (pl["bank_type"].get<int64_t>() != 4) {
+								ctx.maindb.patch(
+									std::to_string(ev.command.usr.id),
+									{{"set", {
+										{"bank_type", 0}
+									}}},
+									[ev](const dpp::http_request_completion_t &evt) {
+										if (evt.status == 200) {
+											ev.edit_response(ephmsg("You switched back to default bank."));
+										} else {
+											ev.edit_response(ephmsg("Database request failure."));
+										}
+									}
+								);
+							} else {
+								ev.edit_response(ephmsg("You cannot switch back to default bank with USSR bank."));
+							}
+							break;
+						case 1:
+							if (pl["bal"].get<int64_t>() >= 5000) {
+								ctx.maindb.patch(
+									std::to_string(ev.command.usr.id),
+									{{"increment", {
+										{"bal", -5000}
+									}}, {"set", {
+										{"bank_type", 1}
+									}}},
+									[ev](const dpp::http_request_completion_t &evt) {
+										if (evt.status == 200) {
+											ev.edit_response(ephmsg("You applied for premium bank with 5000 coins!"));
+										} else {
+											ev.edit_response(ephmsg("Database request failure, you are not charged."));
+										}
+									}
+								);
+							} else {
+								ev.edit_response(ephmsg("You don't have enough money you need 5000"));
+							}
+							break;
+						case 2:
+							if (pl["bal"].get<int64_t>() >= 25000) {
+								ctx.maindb.patch(
+									std::to_string(ev.command.usr.id),
+									{{"increment", {
+										{"bal", -25000}
+									}}, {"set", {
+										{"bank_type", 2}
+									}}},
+									[ev](const dpp::http_request_completion_t &evt) {
+										if (evt.status == 200) {
+											ev.edit_response(ephmsg("You applied for royal bank with 25000 coins!"));
+										} else {
+											ev.edit_response(ephmsg("Database request failure, you are not charged."));
+										}
+									}
+								);
+							} else {
+								ev.edit_response(ephmsg("You don't have enough money you need 25000"));
+							}
+							break;
+						case 3:
+							if (pl["bal"].get<int64_t>() >= 20000) {
+								ctx.maindb.patch(
+									std::to_string(ev.command.usr.id),
+									{{"increment", {
+										{"bal", -20000}
+									}}, {"set", {
+										{"bank_type", 3}
+									}}},
+									[ev](const dpp::http_request_completion_t &evt) {
+										if (evt.status == 200) {
+											ev.edit_response(ephmsg("You applied for the meme bank with 20000 coins!"));
+										} else {
+											ev.edit_response(ephmsg("Database request failure, you are not charged."));
+										}
+									}
+								);
+							} else {
+								ev.edit_response(ephmsg("You don't have enough money you need 20000"));
+							}
+							break;
+						case 4:
+							if (pl["bal"].get<int64_t>() >= 1) {
+								ctx.maindb.patch(
+									std::to_string(ev.command.usr.id),
+									{{"set", {
+										{"bank_type", 4}
+									}}},
+									[ev](const dpp::http_request_completion_t &evt) {
+										if (evt.status == 200) {
+											ev.edit_response(ephmsg("You applied for the USSR bank for free! (there is no going back)"));
+										} else {
+											ev.edit_response(ephmsg("Database request failure, you are not charged."));
+										}
+									}
+								);
+							} else {
+								ev.edit_response(ephmsg("You need at least 1 coin to apply for the USSR bank."));
+							}
+							break;
+					}
+				},
+				[ctx, ev]() {
+					ctx.cooldowns.reset_trigger(ev.command.usr.id, "bank");
+					ev.edit_response(ephmsg("You have not registered yet!"));
+				});
 		}
 	});
 }
@@ -316,6 +434,7 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 				int64_t damt = amount;
 				int64_t cur_bal = usr_data["bal"].get<int64_t>();
 				int64_t bank_left = usr_data["bank_max"].get<int64_t>() - usr_data["bank"].get<int64_t>();
+				int64_t bank_type = usr_data["bank_type"].get<int64_t>();
 				if (amount == -1) {
 					damt = cur_bal > bank_left ? bank_left : cur_bal;
 				}
@@ -331,13 +450,40 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 					// ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
 					ev.edit_response(ephmsg("You are broke my guy"));
 				} else {
+					// now we do bank-specific restrictions
+					// doing if statements instead of switch
+					// default bank has no deposit restrictions
+					if (bank_type == 1 && damt > 200) {
+						return ev.edit_response(ephmsg("You cannot deposit more than 200 with premium bank!"));
+					}
+					if (bank_type == 2 && damt < 2500) {
+						return ev.edit_response(ephmsg("You cannot deposit less than 2500 with royal bank!"));
+					}
+					if (bank_type == 3) {
+						std::random_device rd;
+						std::mt19937 gen(rd());
+						std::uniform_int_distribution<> distr(1, 20);
+						if (distr(gen) == 1) {
+							// rip this guy
+							return ctx.maindb.patch(
+								std::to_string(ev.command.usr.id),
+								{{"increment", {{"bal", -damt}}}},
+								[ctx, ev, damt](const dpp::http_request_completion_t &evt) {
+									if (evt.status == 200) {
+										ev.edit_response(ephmsg("The memers were camping in front of the bank... They surrounded you and took all the money you were depositing, but you managed to run away! Lost: " + FormatWithCommas(damt)));
+									} else {
+										ev.edit_response(ephmsg("You lucky bastard! The memers were robbing you... but a database request failure stopped them!"));
+									}
+								}
+							);
+						}
+					}
 					ctx.maindb.patch(
 						std::to_string(ev.command.usr.id),
-						{{"increment", {{"bal", -damt}, {"bank", damt}}}},
-						[ctx, ev,
-						 damt](const dpp::http_request_completion_t &evt) {
+						{{"increment", {{"bal", -damt}, {"bank", (bank_type == 4 ? damt / 2 : damt)}}}},
+						[ctx, ev, damt, bank_type](const dpp::http_request_completion_t &evt) {
 							if (evt.status == 200) {
-								ev.edit_response(ephmsg(fmt::format("{} deposited.", FormatWithCommas(damt))));
+								ev.edit_response(ephmsg(fmt::format("{} deposited{}", FormatWithCommas(bank_type == 4 ? damt / 2 : damt), (bank_type == 4 ? "! THANKS FOR HALF OF THE MONEY COMRADE!" : "."))));
 							} else {
 								ctx.cooldowns.reset_trigger(ev.command.usr.id, "deposit");
 								ev.edit_response(ephmsg("Something went wrong while trying to deposit your money."));
@@ -353,8 +499,7 @@ void deposit(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 }
 
 void withdraw(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-	// TODO:
-	// implement bank color(s)
+	// royal bank no longer sets a restriction on withdrawl since premium doesn't have one
 	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
 		int64_t amount = std::get<int64_t>(ev.get_parameter("amount"));
 		if (amount <= 0 && amount != -1) {
@@ -653,7 +798,7 @@ void bitcoin(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 			ev.edit_response(ephmsg(fmt::format(
 				"{}\nNext reset in {} seconds.",
 				std::to_string(exchange_rate),
-				std::to_string(60 - ctx.btc_timer))));
+				std::to_string(60*30 - ctx.btc_timer))));
 		} else if (cmd_data.options[0].name == "reset") {
 			exchange_rate = 10000;
 			ev.edit_response(ephmsg("ok"));

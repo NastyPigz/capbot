@@ -45,20 +45,49 @@ inline const std::map<std::string, command_definition> cmds = {
             { dpp::command_option(dpp::co_user, "user", "Target user's balance", false) },
         }
     }},
-    { "bank", {
-        "Check your bank", bank, 1
-    }},
-    { "banks", {
-        "View avaliable banks", banks, 1, {
-            { dpp::command_option(dpp::co_integer, "type", "the bank you want to view.", false)
-                .add_choice(dpp::command_option_choice("default", std::int64_t(0)))
-                .add_choice(dpp::command_option_choice("premium", std::int64_t(1)))
-                .add_choice(dpp::command_option_choice("royal", std::int64_t(2)))
-                .add_choice(dpp::command_option_choice("meme", std::int64_t(3)))
-                .add_choice(dpp::command_option_choice("ussr", std::int64_t(4)))
+    {"bank", {
+        "View banking profile, available banks, or sign up for a new bank system", bank, 1, {
+            {
+                dpp::command_option(dpp::co_sub_command, "profile", "View your banking profile").
+                    add_option(dpp::command_option(dpp::co_user, "user", "Target user's banking profile", false))
+            },
+            {
+                dpp::command_option(dpp::co_sub_command, "buy", "Buy a new bank system").
+                    add_option(
+                        dpp::command_option(dpp::co_integer, "type", "The bank you want to buy.", false)
+                            .add_choice(dpp::command_option_choice("default", std::int64_t(0)))
+                            .add_choice(dpp::command_option_choice("premium", std::int64_t(1)))
+                            .add_choice(dpp::command_option_choice("royal", std::int64_t(2)))
+                            .add_choice(dpp::command_option_choice("meme", std::int64_t(3)))
+                            .add_choice(dpp::command_option_choice("ussr", std::int64_t(4))))
+            },
+            {
+                dpp::command_option(dpp::co_sub_command, "view", "View the information about a certain bank").
+                    add_option(
+                        dpp::command_option(dpp::co_integer, "type", "The bank you want to buy.", true)
+                            // you cannot switch back to default bank
+                            .add_choice(dpp::command_option_choice("default", std::int64_t(0)))
+                            .add_choice(dpp::command_option_choice("premium", std::int64_t(1)))
+                            .add_choice(dpp::command_option_choice("royal", std::int64_t(2)))
+                            .add_choice(dpp::command_option_choice("meme", std::int64_t(3)))
+                            .add_choice(dpp::command_option_choice("ussr", std::int64_t(4))))
             }
         }
     }},
+    // { "bank", {
+    //     "Check your bank", bank, 1
+    // }},
+    // { "banks", {
+    //     "View avaliable banks", banks, 1, {
+    //         { dpp::command_option(dpp::co_integer, "type", "the bank you want to view.", false)
+    //             .add_choice(dpp::command_option_choice("default", std::int64_t(0)))
+    //             .add_choice(dpp::command_option_choice("premium", std::int64_t(1)))
+    //             .add_choice(dpp::command_option_choice("royal", std::int64_t(2)))
+    //             .add_choice(dpp::command_option_choice("meme", std::int64_t(3)))
+    //             .add_choice(dpp::command_option_choice("ussr", std::int64_t(4)))
+    //         }
+    //     }
+    // }},
     { "beg", { "pls give me money I'm begging you", beg, 15 }},
     { "mine", { "40% risk of dying and losing all your wallet money... but 60% big price", mine, 30}},
     { "deposit", {
