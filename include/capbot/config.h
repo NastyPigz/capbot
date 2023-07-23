@@ -54,7 +54,7 @@ inline const std::map<std::string, command_definition> cmds = {
             {
                 dpp::command_option(dpp::co_sub_command, "buy", "Buy a new bank system").
                     add_option(
-                        dpp::command_option(dpp::co_integer, "type", "The bank you want to buy.", false)
+                        dpp::command_option(dpp::co_integer, "type", "The bank you want to buy.", true)
                             .add_choice(dpp::command_option_choice("default", std::int64_t(0)))
                             .add_choice(dpp::command_option_choice("premium", std::int64_t(1)))
                             .add_choice(dpp::command_option_choice("royal", std::int64_t(2)))
@@ -64,7 +64,7 @@ inline const std::map<std::string, command_definition> cmds = {
             {
                 dpp::command_option(dpp::co_sub_command, "view", "View the information about a certain bank").
                     add_option(
-                        dpp::command_option(dpp::co_integer, "type", "The bank you want to buy.", true)
+                        dpp::command_option(dpp::co_integer, "type", "The bank you want to buy.", false)
                             // you cannot switch back to default bank
                             .add_choice(dpp::command_option_choice("default", std::int64_t(0)))
                             .add_choice(dpp::command_option_choice("premium", std::int64_t(1)))
