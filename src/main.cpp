@@ -69,11 +69,10 @@ int main() {
 	Db usersdb(prokey, projid, "bot_users", bot);
 	// db_tests(maindb);
 
-	int sec_left = 1;
 	bot.start_timer(
-		[&sec_left](dpp::timer timer) {
+		[](dpp::timer timer) {
 			// every 30 minutes
-			if (sec_left == 60 * 30) {
+			if (minute_left == 30) {
 				std::random_device rd;
 				std::mt19937 gen(rd());
 				std::uniform_int_distribution<> rng(9500, 10500);
@@ -85,12 +84,12 @@ int main() {
 				// 	std::uniform_int_distribution<> distr(40000, 60000);
 				// 	exchange_rate = distr(gen);
 				// }
-				sec_left = 1;
+				minute_left = 1;
 			} else {
-				sec_left = sec_left + 1;
+				minute_left = minute_left + 1;
 			}
 		},
-		1);
+		60);
 
 	CooldownManager cooldowns;
 
@@ -129,7 +128,7 @@ int main() {
 		std::cout << "Logged in as " << bot.me.username << "!\n";
 	});
 
-	bot.on_slashcommand.co_attach([&bot, &maindb, &cooldowns, &usersdb, &sec_left, &testers](const dpp::slashcommand_t& event) -> dpp::task<void> {
+	bot.on_slashcommand.co_attach([&bot, &maindb, &cooldowns, &usersdb, &testers](const dpp::slashcommand_t event) -> dpp::task<void> {
 		// std::cout << sec_left << '\n';
 		std::string name = event.command.get_command_name();
 		if (cmds.find(name) != cmds.end()) {
@@ -138,25 +137,22 @@ int main() {
 				if (std::find(std::begin(testers), std::end(testers), event.command.usr.id) == std::end(testers)) {
 					cooldowns.trigger(event.command.usr.id, name);
 				}
-				usersdb.patch(std::to_string(event.command.usr.id),
-							  {{"increment", {{"cmds", 1}}}},
-							  [&usersdb, event](
-								  const dpp::http_request_completion_t& evt) {
-								  if (evt.status == 404) {
-									  usersdb.post({{"key", std::to_string(event.command.usr.id)}, {"cmds", 1}});
-								  }
-							  });
-				maindb.patch(std::to_string(event.command.usr.id),
+				auto evt = co_await usersdb.patch(std::to_string(event.command.usr.id),
+							  {{"increment", {{"cmds", 1}}}});
+				if (evt.status == 404) {
+					co_await usersdb.post({{"key", std::to_string(event.command.usr.id)}, {"cmds", 1}});
+				}
+				co_await maindb.patch(std::to_string(event.command.usr.id),
 					{{"increment", {{"exp", 1}}}}
 				);
-				cmds.at(name).function(CmdCtx{bot, maindb, cooldowns, sec_left}, event);
+				cmds.at(name).function(CmdCtx{bot, maindb, cooldowns}, event);
 			} else {
 				event.reply(ephmsg(fmt::format("Woah, slow down! Next execution is in {}", wait_time)));
 			}
 		}
 	});
 
-	bot.on_message_create([&bot](const dpp::message_create_t& event) {
+	bot.on_message_create([&bot](const dpp::message_create_t event) {
 		if (event.msg.author.is_bot()) {
 			return;
 		}
@@ -185,67 +181,59 @@ int main() {
 		}
 	});
 
-	bot.on_button_click([](const dpp::button_click_t & event) {
+	bot.on_button_click([](const dpp::button_click_t event) {
 		// event.edit_original_response(ephmsg("Test123"));
         event.reply("You clicked: " + event.custom_id);
     });
 
-	bot.on_select_click([&maindb, &bot](const dpp::select_click_t & event) {
+	bot.on_select_click.co_attach([&maindb, &bot](const dpp::select_click_t event) -> dpp::task<void> {
         /* Select clicks are still interactions, and must be replied to in some form to
          * prevent the "this interaction has failed" message from Discord to the user.
          */
 		if (event.custom_id == "curse_1") {
-			return maindb.patch(std::to_string(event.command.usr.id),
+			auto evt = co_await maindb.patch(std::to_string(event.command.usr.id),
 					{{"increment",
 						{
 							{"inv.cursed_beef", -1},
 						}
-					}},
-					[event, &maindb, &bot](const dpp::http_request_completion_t &evt) {
-						if (evt.status == 200) {
-							maindb.patch(event.values[0],
-								{{"increment",
-									{
-										{"multi", -5}
-									}
-								}},
-								[event, &maindb, &bot](const dpp::http_request_completion_t &evt) {
-									if (evt.status == 200) {
-										std::string user_id = event.values[0];
-										dpp::message msg("");
-										msg.content = fmt::format("Fuck you <@{}>! You are cursed.", user_id);
-										msg.channel_id = event.command.channel_id;
-										bot.message_create(msg);
-										event.reply(dpp::ir_update_message, "Cursed");
-										bot.start_timer([user_id, &maindb, &bot](dpp::timer h) {
-											maindb.patch(
-												user_id,
-												{{"increment",
-													{
-														{"multi", 5}
-													}
-												}},
-												[](const dpp::http_request_completion_t &evt) {
-													// unlucky bastard if this request failed
-												});
-											bot.stop_timer(h);
-										}, 30 * 60);
-									} else {
-										event.reply("Looks like god has decided to not curse this person!");
-									}
-								}
-							);
-						} else {
-							event.reply("Sorry buddy but we failed to charge you!");
-						}
-					}
+					}}
 				);
+			if (evt.status == 200) {
+				auto evt = co_await maindb.patch(event.values[0],
+					{{"increment",
+						{
+							{"multi", -5}
+						}
+					}}
+				);
+				if (evt.status == 200) {
+					std::string user_id = event.values[0];
+					dpp::message msg("");
+					msg.content = fmt::format("Fuck you <@{}>! You are cursed.", user_id);
+					msg.channel_id = event.command.channel_id;
+					bot.message_create(msg);
+					event.reply(dpp::ir_update_message, "Cursed");
+					co_await bot.co_timer(30 * 60);
+					maindb.patch(
+							user_id,
+							{{"increment",
+								{
+									{"multi", 5}
+								}
+							}}
+						);
+				} else {
+					event.reply("Looks like god has decided to not curse this person!");
+				}
+			} else {
+				event.reply("Sorry buddy but we failed to charge you!");
+			}
 		}
         event.reply("You clicked " + event.custom_id + " and chose: " + event.values[0]);
     });
 
 	std::cout << "starting with version " << dpp::utility::version() << '\n';
 
-	bot.start(false);
+	bot.start(dpp::st_wait);
 	return 0;
 }

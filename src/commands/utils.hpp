@@ -115,14 +115,13 @@ void chkinv(const Db &maindb, json inv, std::string id) {
     }
 }
 
-void getbal_then(const Db &maindb, std::string user_id, std::function<void(json)> callback, std::function<void()> err) {
-    maindb.get(user_id, [callback, err](const dpp::http_request_completion_t &evt) {
-        if (evt.status == 200) {
-            callback(json::parse(evt.body));
-        } else {
-            err();
-        }
-    });
+dpp::task<std::optional<json>> getbal(const Db &maindb, std::string user_id) {
+    auto evt = co_await maindb.get(user_id);
+    if (evt.status == 200) {
+        co_return json::parse(evt.body);
+    } else {
+        co_return std::nullopt;
+    }
 }
 
 uint32_t get_bank_colour(int type) {
@@ -169,106 +168,96 @@ std::string get_bank_name(int type) {
     return name;
 }
 
-void find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, std::string user_id, std::string item, nlohmann::json pl) {
+dpp::task<void> find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, std::string user_id, std::string item, nlohmann::json pl) {
     if (item == "bank_space") {
         // have to implement bank colours first.
         if (pl["bank_type"].get<int64_t>() == 0) {
-            return ev.edit_response(ephmsg("You cannot get more bankspace with default bank!"));
+            co_return ev.edit_response(ephmsg("You cannot get more bankspace with default bank!"));
         }
         std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<> distr(25*amount, 50*amount);
 		int amt = distr(gen);
-        return ctx.maindb.patch(
+        auto evt = co_await ctx.maindb.patch(
             user_id,
             {{"increment",
                 {
                     {"inv." + item, -amount},
                     {"bank_max", amt}
                 }
-            }},
-            [ctx, ev, amount, amt, item](const dpp::http_request_completion_t &evt) {
-                if (evt.status == 200) {
-                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} extra bank space.", amount, shop_items[item]["display"].get<std::string>(), amt)));
-                } else {
-                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-                }
-            });
+            }});
+        if (evt.status == 200) {
+            ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} extra bank space.", amount, shop_items[item]["display"].get<std::string>(), amt)));
+        } else {
+            ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+            ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+        }
     } else if (item == "coin_bag") {
         std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<> distr(100*amount, 150*amount);
         int amt = distr(gen);
-        return ctx.maindb.patch(
+        auto evt = co_await ctx.maindb.patch(
             user_id,
             {{"increment",
                 {
                     {"inv." + item, -amount},
                     {"bal", amt}
                 }
-            }},
-            [ctx, ev, amount, amt, item](const dpp::http_request_completion_t &evt) {
-                if (evt.status == 200) {
-                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} coins from the bag.", amount, shop_items[item]["display"].get<std::string>(), amt)));
-                } else {
-                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-                }
-            });
+            }});
+         if (evt.status == 200) {
+            ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} coins from the bag.", amount, shop_items[item]["display"].get<std::string>(), amt)));
+        } else {
+            ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+            ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+        }
     } else if (item == "beef") {
-        return ctx.maindb.patch(
+        auto evt = co_await ctx.maindb.patch(
             user_id,
             {{"increment",
                 {
                     {"inv." + item, -amount},
                     {"multi", amount}
                 }
-            }},
-            [ctx, ev, amount, item, user_id](const dpp::http_request_completion_t &evt) {
-                if (evt.status == 200) {
-                    ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier for 1 minute.", amount, shop_items[item]["display"].get<std::string>(), amount)));
-                    ctx.bot.start_timer([&ctx, user_id, item, amount](dpp::timer h) {
-                        ctx.maindb.patch(
-                            user_id,
-                            {{"increment",
-                                {
-                                    {"multi", -amount}
-                                }
-                            }},
-                            [](const dpp::http_request_completion_t &evt) {
-                                // luck bastard if this request failed
-                            });
-                        ctx.bot.stop_timer(h);
-                    }, 60);
-                } else {
-                    ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-                    ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-                }
-            });
+            }});
+        if (evt.status == 200) {
+            ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier for 1 minute.", amount, shop_items[item]["display"].get<std::string>(), amount)));
+            ctx.bot.start_timer([ctx, user_id, item, amount](dpp::timer h) {
+                ctx.maindb.patch(
+                    user_id,
+                    {{"increment",
+                        {
+                            {"multi", -amount}
+                        }
+                    }});
+                // lucky bastard if this request failed
+                ctx.bot.stop_timer(h);
+            }, 60);
+        } else {
+            ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+            ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+        }
     } else if (item == "cursed_beef") {
         std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<> distr(1, 10);
         // it's actually 30% backfiring, we are going to say 40% to make it more intense
         if (distr(gen) < 4) {
-            return ctx.maindb.patch(
+            auto evt = co_await ctx.maindb.patch(
                 user_id,
                 {{"increment",
                     {
                         {"inv." + item, -1},
                     }
-                }},
-                [ctx, ev](const dpp::http_request_completion_t &evt) {
-                    if (evt.status == 200) {
-                        ev.edit_response("Ughhh!! Your balls are too itchy and you dropped your beef! Good luck next time.");
-                    } else {
-                        ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-                        ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-                    }
-                });
+                }});
+             if (evt.status == 200) {
+                ev.edit_response("Ughhh!! Your balls are too itchy and you dropped your beef! Good luck next time.");
+            } else {
+                ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+                ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+            }
         }
-        return ev.edit_response(
+        co_return ev.edit_response(
             dpp::message("Who would you like to curse?").set_flags(dpp::m_ephemeral).add_component(
                 dpp::component().add_component(
                     dpp::component().set_placeholder("Select who to curse").

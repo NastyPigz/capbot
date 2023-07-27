@@ -2,41 +2,40 @@
 #include "capbot/cmd.h"
 #include "capbot/config.h"
 
-void ping(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+dpp::task<void> ping(const CmdCtx ctx, const dpp::slashcommand_t ev) {
     auto start = std::chrono::high_resolution_clock::now();
-    ev.thinking(EPH_OR_NOT, [start, ev](const dpp::confirmation_callback_t &v) {
-        auto stop = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed_seconds = stop - start;
-        ev.edit_response(dpp::message(fmt::format("Pong!\n**API Calc: **{}\n**API Real: **{}\n**WS: **{}", elapsed_seconds.count(), v.bot->rest_ping, ev.from->websocket_ping)));
-    });
+    auto v = co_await ev.co_thinking(EPH_OR_NOT);
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds = stop - start;
+    co_return ev.edit_response(dpp::message(fmt::format("Pong!\n**API Calc: **{}\n**API Real: **{}\n**WS: **{}", elapsed_seconds.count(), v.bot->rest_ping, ev.from->websocket_ping)));
 }
 
-void uptime(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-    ev.reply(ephmsg(ctx.bot.uptime().to_string()));
+dpp::task<void> uptime(const CmdCtx ctx, const dpp::slashcommand_t ev) {
+    co_return ev.reply(ephmsg(ctx.bot.uptime().to_string()));
 }
 
-void help(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-    ev.reply(ephmsg("ok"));
+dpp::task<void> help(const CmdCtx ctx, const dpp::slashcommand_t ev) {
+    co_return ev.reply(ephmsg("ok"));
 }
 
-void think(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-    ev.thinking(EPH_OR_NOT);
+dpp::task<void> think(const CmdCtx ctx, const dpp::slashcommand_t ev) {
+   co_await ev.co_thinking(EPH_OR_NOT);
+   co_return;
 }
 
-void shutdown(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
-    ev.thinking(EPH_OR_NOT, [ev, ctx](const dpp::confirmation_callback_t &v) {
-        if (ev.command.usr.id == dpp::snowflake(763854419484999722)) {
-            ctx.bot.shutdown();
-            // delete ctx.bot;
-            // ctx.bot = nullptr;
-            ev.edit_response(ephmsg("I hate women"));
-        } else {
-            ev.edit_response(ephmsg(":nerd:"));
-        }
-    });
+dpp::task<void> shutdown(const CmdCtx ctx, const dpp::slashcommand_t ev) {
+    co_await ev.co_thinking(EPH_OR_NOT);
+    if (ev.command.usr.id == dpp::snowflake(763854419484999722)) {
+        ctx.bot.shutdown();
+        // delete ctx.bot;
+        // ctx.bot = nullptr;
+        ev.edit_response(ephmsg("I hate women"));
+    } else {
+        ev.edit_response(ephmsg(":nerd:"));
+    }
 }
 
-// void button(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+// dpp::task<void> button(const CmdCtx ctx, const dpp:slashcommand_t ev) {
 //     ev.reply(
 //         dpp::message("this text has buttons").add_component(
 //             dpp::component().add_component(

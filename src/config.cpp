@@ -14,6 +14,7 @@ void init_all_items() {
     }
 }
 
-void fail(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+dpp::task<void> fail(const CmdCtx ctx, const dpp::slashcommand_t ev) {
    // hehehehaw
+   co_return;
 }

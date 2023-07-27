@@ -7,14 +7,23 @@
 #include "db/crud.h"
 #include "cooldown.h"
 
+
+#if EPH_OR_NOT == false
+#define ephmsg(content) dpp::message(content)
+#else
+#define ephmsg(content) dpp::message(content).set_flags(dpp::m_ephemeral)
+#endif
+
+// btc timer
+inline int minute_left = 1;
+
 struct CmdCtx {
     dpp::cluster &bot;
     const Db &maindb;
 	CooldownManager &cooldowns;
-	const int &btc_timer;
 };
 
-using command_function = const std::function<void(const CmdCtx, const dpp::slashcommand_t &ev)>;
+using command_function = const std::function<dpp::task<void>(const CmdCtx, const dpp::slashcommand_t ev)>;
 
 struct command_definition {
 	const std::string description;
@@ -23,6 +32,6 @@ struct command_definition {
 	const std::vector<dpp::command_option> parameters = {};
 };
 
-dpp::message ephmsg(const std::string content);
+// dpp::message ephmsg(const std::string content);
 
 #endif

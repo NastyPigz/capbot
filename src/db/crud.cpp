@@ -9,54 +9,47 @@ Db::Db(std::string project_key, std::string project_id, std::string base, dpp::c
         {"X-API-Key", project_key}
     }) {}
     
-void Db::put(json items, handle_function fn) const {
+dpp::task<dpp::http_request_completion_t> Db::put(json items) const {
     std::multimap<std::string, std::string> hdrs = headers;
     hdrs.insert(std::pair<std::string, std::string>("Content-Type", "application/json"));
-    client->request(url+"items", dpp::http_method::m_put, [fn](const dpp::http_request_completion_t& e) {
-        fn(e);
-        std::cout << "PUT/items " << e.status << ' ' << e.body << '\n';
-    }, json({
+    auto e = co_await client->co_request(url+"items", dpp::http_method::m_put, json({
         {"items", items}
     }).dump(), "application/json", hdrs);
+    std::cout << "PUT/items " << e.status << ' ' << e.body << '\n';
+    co_return e;
 }
 
-// constexpr auto formatString = "items/{}";
-
-void Db::get(std::string key, handle_function fn) const {
-    client->request(url+"items/"+key, dpp::http_method::m_get, [fn, key](const dpp::http_request_completion_t& e) {
-        fn(e);
-        std::cout << fmt::format("GET/items/{} ", key) << e.status << ' ' << e.body << '\n';
-    }, "", "", headers);
+dpp::task<dpp::http_request_completion_t> Db::get(std::string key) const {
+    auto e = co_await client->co_request(url+"items/"+key, dpp::http_method::m_get, "", "", headers);
+    std::cout << fmt::format("GET/items/{} ", key) << e.status << ' ' << e.body << '\n';
+    co_return e;
 }
 
-void Db::del(std::string key, handle_function fn) const {
-    client->request(url+"items/"+key, dpp::http_method::m_delete, [fn, key](const dpp::http_request_completion_t& e) {
-        fn(e);
-        std::cout << fmt::format("DELETE/items/{} ", key) << e.status << ' ' << e.body << '\n';
-    }, "", "", headers);
+dpp::task<dpp::http_request_completion_t> Db::del(std::string key) const {
+    auto e = co_await client->co_request(url+"items/{}"+key, dpp::http_method::m_delete, "", "", headers);
+    std::cout << fmt::format("DELETE/items/{} ", key) << e.status << ' ' << e.body << '\n';
+    co_return e;
 }
 
-void Db::post(json item, handle_function fn) const {
+dpp::task<dpp::http_request_completion_t> Db::post(json item) const {
     std::multimap<std::string, std::string> hdrs = headers;
     hdrs.insert(std::pair<std::string, std::string>("Content-Type", "application/json"));
-    client->request(url+"items", dpp::http_method::m_post, [fn](const dpp::http_request_completion_t& e) {
-        fn(e);
-        std::cout << "POST/items " << e.status << ' ' << e.body << '\n';
-    }, json({
+    auto e = co_await client->co_request(url+"items", dpp::http_method::m_post, json({
         {"item", item}
     }).dump(), "application/json", hdrs);
+    std::cout << "POST/items " << e.status << ' ' << e.body << '\n';
+    co_return e;
 }
 
-void Db::patch(std::string key, json item, handle_function fn) const {
+dpp::task<dpp::http_request_completion_t> Db::patch(std::string key, json item) const {
     std::multimap<std::string, std::string> hdrs = headers;
     hdrs.insert(std::pair<std::string, std::string>("Content-Type", "application/json"));
-    client->request(url+"items/"+key, dpp::http_method::m_patch, [fn, key](const dpp::http_request_completion_t& e) {
-        fn(e);
-        std::cout << fmt::format("PATCH/items/{} ", key) << e.status << ' ' << e.body << '\n';
-    }, item.dump(), "application/json", hdrs);
+    auto e = co_await client->co_request(url+"items/"+key, dpp::http_method::m_patch, item.dump(), "application/json", hdrs);
+    std::cout << fmt::format("PATCH/items/{} ", key) << e.status << ' ' << e.body << '\n';
+    co_return e;
 }
 
-void Db::query(json query, handle_function fn, unsigned int limit, std::string last) const {
+dpp::task<dpp::http_request_completion_t> Db::query(json query, unsigned int limit, std::string last) const {
     std::multimap<std::string, std::string> hdrs = headers;
     hdrs.insert(std::pair<std::string, std::string>("Content-Type", "application/json"));
     json pl = {
@@ -68,8 +61,7 @@ void Db::query(json query, handle_function fn, unsigned int limit, std::string l
     if (last != "") {
         pl["last"] = last;
     }
-    client->request(url+"query", dpp::http_method::m_post, [fn](const dpp::http_request_completion_t& e) {
-        fn(e);
-        std::cout << "POST/query " << e.status << ' ' << e.body << '\n';
-    }, pl.dump(), "application/json", hdrs);
+    auto e = co_await client->co_request(url+"query", dpp::http_method::m_post, pl.dump(), "application/json", hdrs);
+    std::cout << "POST/query " << e.status << ' ' << e.body << '\n';   
+    co_return e;
 }
