@@ -123,6 +123,17 @@ inline const json shop_items = R"({
         "purchasable": true,
         "sellable": false,
         "usable": false
+    },
+    "drapes_curtain":{
+        "name": ["drapes", "curtain", "dc", "drapes_curtain"],
+        "display": "<:drapescurtain:1132462188506927215> Drapes Curtain",
+        "thumbnail": "https://cdn.discordapp.com/emojis/1132462188506927215.webp?v=1",
+        "price": 10000,
+        "description": "A cloak that prevents you from being robbed!",
+        "showing": true,
+        "purchasable": true,
+        "sellable": true,
+        "usable": true
     }
 })"_json;
 

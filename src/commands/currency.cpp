@@ -1371,3 +1371,17 @@ void roulette(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
 			});
 	});
 }
+
+void interest(const CmdCtx ctx, const dpp::slashcommand_t &ev) {
+	ev.thinking(EPH_OR_NOT, [ctx, ev](const dpp::confirmation_callback_t &v) {
+		getbal_then(
+			ctx.maindb, std::to_string(ev.command.usr.id),
+			[ctx, ev](json pl) {
+				
+			},
+			[ctx, ev]() {
+				ctx.cooldowns.reset_trigger(ev.command.usr.id, "roll");
+				ev.edit_response(ephmsg("You have not registered yet!"));
+			});
+	});
+}

@@ -20,15 +20,17 @@ void Db::put(json items, handle_function fn) const {
     }).dump(), "application/json", hdrs);
 }
 
+// constexpr auto formatString = "items/{}";
+
 void Db::get(std::string key, handle_function fn) const {
-    client->request(fmt::format(url+"items/{}", key), dpp::http_method::m_get, [fn, key](const dpp::http_request_completion_t& e) {
+    client->request(url+"items/"+key, dpp::http_method::m_get, [fn, key](const dpp::http_request_completion_t& e) {
         fn(e);
         std::cout << fmt::format("GET/items/{} ", key) << e.status << ' ' << e.body << '\n';
     }, "", "", headers);
 }
 
 void Db::del(std::string key, handle_function fn) const {
-    client->request(fmt::format(url+"items/{}", key), dpp::http_method::m_delete, [fn, key](const dpp::http_request_completion_t& e) {
+    client->request(url+"items/"+key, dpp::http_method::m_delete, [fn, key](const dpp::http_request_completion_t& e) {
         fn(e);
         std::cout << fmt::format("DELETE/items/{} ", key) << e.status << ' ' << e.body << '\n';
     }, "", "", headers);
@@ -48,7 +50,7 @@ void Db::post(json item, handle_function fn) const {
 void Db::patch(std::string key, json item, handle_function fn) const {
     std::multimap<std::string, std::string> hdrs = headers;
     hdrs.insert(std::pair<std::string, std::string>("Content-Type", "application/json"));
-    client->request(fmt::format(url+"items/{}", key), dpp::http_method::m_patch, [fn, key](const dpp::http_request_completion_t& e) {
+    client->request(url+"items/"+key, dpp::http_method::m_patch, [fn, key](const dpp::http_request_completion_t& e) {
         fn(e);
         std::cout << fmt::format("PATCH/items/{} ", key) << e.status << ' ' << e.body << '\n';
     }, item.dump(), "application/json", hdrs);

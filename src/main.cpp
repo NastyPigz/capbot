@@ -1,6 +1,5 @@
 // capbot
 #include <dpp/dpp.h>
-#include <dpp/etf.h>
 #include <fmt/format.h>
 
 #include <algorithm>
@@ -130,7 +129,7 @@ int main() {
 		std::cout << "Logged in as " << bot.me.username << "!\n";
 	});
 
-	bot.on_slashcommand([&bot, &maindb, &cooldowns, &usersdb, &sec_left, &testers](const dpp::slashcommand_t& event) {
+	bot.on_slashcommand.co_attach([&bot, &maindb, &cooldowns, &usersdb, &sec_left, &testers](const dpp::slashcommand_t& event) -> dpp::task<void> {
 		// std::cout << sec_left << '\n';
 		std::string name = event.command.get_command_name();
 		if (cmds.find(name) != cmds.end()) {
