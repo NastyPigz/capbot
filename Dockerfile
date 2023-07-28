@@ -12,16 +12,15 @@ RUN apt-get install -y software-properties-common && \
 # RUN add-apt-repository 'deb http://mirrors.kernel.org/ubuntu hirsute main universe'
 
 # locale is for my FormatWithCommas function
-RUN apt-get install -y locales libboost-all-dev wget && \
+RUN apt-get install -y locales libboost-all-dev wget build-essential && \
     locale-gen en_US.UTF-8 && \
     update-locale
 
-# RUN apt-get install -y gcc-11 g++-11
+# RUN apt-get install -y gcc-11 g++-11 libc++-dev libc++abi-dev
 
-RUN apt-get install -y libc++-14-dev && \
-    wget https://apt.llvm.org/llvm.sh && \
+RUN wget https://apt.llvm.org/llvm.sh && \
     chmod +x llvm.sh && \
-    ./llvm.sh 14
+    ./llvm.sh 14 all
 
 RUN apt-get install -y --reinstall ca-certificates && \
     mkdir /usr/local/share/ca-certificates/cacert.org && \
@@ -31,12 +30,14 @@ RUN apt-get install -y --reinstall ca-certificates && \
 
 ENV CC=clang-14
 ENV CXX=clang++-14
+# ENV CXXFLAGS=-stdlib=libstdc++
+# ENV LDFLAGS=-stdlib=libstdc++
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
 RUN cmake ..
-RUN clang++-14 -v && sleep 2 && sleep 5
+# RUN clang++-14 -v && sleep 2 && sleep 5
 # CMD g++ -v
 RUN make -j$(nproc)
 

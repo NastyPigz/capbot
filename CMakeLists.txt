@@ -54,9 +54,14 @@ target_compile_definitions(${BOT_NAME}
     PUBLIC DPP_CORO=ON
 )
 
-target_compile_options(${BOT_NAME}
-    PRIVATE -fcoroutines
-)
+target_compile_options(${BOT_NAME} PRIVATE -stdlib=libc++)
+
+target_link_options(${BOT_NAME} PRIVATE -stdlib=libc++)
+
+# target_compile_options(${BOT_NAME}
+#     PRIVATE -fcoroutines
+# )
+
 
 target_link_libraries(${BOT_NAME}
     dl
