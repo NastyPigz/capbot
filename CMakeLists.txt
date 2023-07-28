@@ -54,6 +54,7 @@ target_compile_definitions(${BOT_NAME}
     PUBLIC DPP_CORO=ON
 )
 
+# this is for clang/clang++ users, and Docker
 target_compile_options(${BOT_NAME} PRIVATE -stdlib=libc++)
 
 target_link_options(${BOT_NAME} PRIVATE -stdlib=libc++)

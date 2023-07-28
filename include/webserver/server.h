@@ -2,6 +2,7 @@
 #define SERVER_H
 
 // webserver
+#define BOOST_ASIO_HAS_STD_INVOKE_RESULT BOOST_ASIO_DISABLE_STD_INVOKE_RESULT
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
