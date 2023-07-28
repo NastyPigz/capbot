@@ -5,6 +5,8 @@ include(FetchContent)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(BOT_NAME "capbot")
 
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+
 project(${BOT_NAME})
 
 FetchContent_Declare(fmt
@@ -26,6 +28,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set_target_properties(${BOT_NAME} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
+    # CXX_FLAGS "-fcoroutines"
 )
 
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -49,6 +52,10 @@ target_include_directories(${BOT_NAME} PUBLIC
 
 target_compile_definitions(${BOT_NAME}
     PUBLIC DPP_CORO=ON
+)
+
+target_compile_options(${BOT_NAME}
+    PRIVATE -fcoroutines
 )
 
 target_link_libraries(${BOT_NAME}

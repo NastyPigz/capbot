@@ -168,125 +168,126 @@ std::string get_bank_name(int type) {
     return name;
 }
 
-dpp::task<void> find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, std::string user_id, std::string item, nlohmann::json pl) {
-    if (item == "bank_space") {
-        // have to implement bank colours first.
-        if (pl["bank_type"].get<int64_t>() == 0) {
-            co_return ev.edit_response(ephmsg("You cannot get more bankspace with default bank!"));
-        }
-        std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_int_distribution<> distr(25*amount, 50*amount);
-		int amt = distr(gen);
-        auto evt = co_await ctx.maindb.patch(
-            user_id,
-            {{"increment",
-                {
-                    {"inv." + item, -amount},
-                    {"bank_max", amt}
-                }
-            }});
-        if (evt.status == 200) {
-            ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} extra bank space.", amount, shop_items[item]["display"].get<std::string>(), amt)));
-        } else {
-            ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-            ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-        }
-    } else if (item == "coin_bag") {
-        std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_int_distribution<> distr(100*amount, 150*amount);
-        int amt = distr(gen);
-        auto evt = co_await ctx.maindb.patch(
-            user_id,
-            {{"increment",
-                {
-                    {"inv." + item, -amount},
-                    {"bal", amt}
-                }
-            }});
-         if (evt.status == 200) {
-            ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} coins from the bag.", amount, shop_items[item]["display"].get<std::string>(), amt)));
-        } else {
-            ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-            ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-        }
-    } else if (item == "beef") {
-        auto evt = co_await ctx.maindb.patch(
-            user_id,
-            {{"increment",
-                {
-                    {"inv." + item, -amount},
-                    {"multi", amount}
-                }
-            }});
-        if (evt.status == 200) {
-            ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier for 1 minute.", amount, shop_items[item]["display"].get<std::string>(), amount)));
-            ctx.bot.start_timer([ctx, user_id, item, amount](dpp::timer h) {
-                ctx.maindb.patch(
-                    user_id,
-                    {{"increment",
-                        {
-                            {"multi", -amount}
-                        }
-                    }});
-                // lucky bastard if this request failed
-                ctx.bot.stop_timer(h);
-            }, 60);
-        } else {
-            ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-            ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-        }
-    } else if (item == "cursed_beef") {
-        std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_int_distribution<> distr(1, 10);
-        // it's actually 30% backfiring, we are going to say 40% to make it more intense
-        if (distr(gen) < 4) {
-            auto evt = co_await ctx.maindb.patch(
-                user_id,
-                {{"increment",
-                    {
-                        {"inv." + item, -1},
-                    }
-                }});
-             if (evt.status == 200) {
-                ev.edit_response("Ughhh!! Your balls are too itchy and you dropped your beef! Good luck next time.");
-            } else {
-                ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-                ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-            }
-        }
-        co_return ev.edit_response(
-            dpp::message("Who would you like to curse?").set_flags(dpp::m_ephemeral).add_component(
-                dpp::component().add_component(
-                    dpp::component().set_placeholder("Select who to curse").
-                        set_type(dpp::cot_user_selectmenu).
-                        set_id("curse_1")
-                )
-            )
-        );
-    // horrose_celery is no longer usable starting from July 21st 2023
-    // } else if (item == "horrorse_celery") {
-    //     return ctx.maindb.patch(
-    //         user_id,
-    //         {{"increment",
-    //             {
-    //                 {"inv." + item, -amount},
-    //                 {"multi", amount*100}
-    //             }
-    //         }},
-    //         [ctx, ev, amount, item, user_id](const dpp::http_request_completion_t &evt) {
-    //             if (evt.status == 200) {
-    //                 ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier PERMANENTLY.", amount*100, shop_items[item]["display"].get<std::string>(), amount)));
-    //             } else {
-    //                 ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
-    //                 ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
-    //             }
-    //         });
-    } else {
+// dpp::task<void> find_use(const CmdCtx ctx, const dpp::slashcommand_t ev, int64_t amount, std::string user_id, std::string item, nlohmann::json pl) {
+//     if (item == "bank_space") {
+//         // have to implement bank colours first.
+//         if (pl["bank_type"].get<int64_t>() == 0) {
+//             ev.edit_response(ephmsg("You cannot get more bankspace with default bank!"));
+//             co_return;
+//         }
+//         std::random_device rd;
+// 		std::mt19937 gen(rd());
+// 		std::uniform_int_distribution<> distr(25*amount, 50*amount);
+// 		int amt = distr(gen);
+//         auto evt = co_await ctx.maindb.patch(
+//             user_id,
+//             {{"increment",
+//                 {
+//                     {"inv." + item, -amount},
+//                     {"bank_max", amt}
+//                 }
+//             }});
+//         if (evt.status == 200) {
+//             ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} extra bank space.", amount, shop_items[item]["display"].get<std::string>(), amt)));
+//         } else {
+//             ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+//             ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+//         }
+//     } else if (item == "coin_bag") {
+//         std::random_device rd;
+// 		std::mt19937 gen(rd());
+// 		std::uniform_int_distribution<> distr(100*amount, 150*amount);
+//         int amt = distr(gen);
+//         auto evt = co_await ctx.maindb.patch(
+//             user_id,
+//             {{"increment",
+//                 {
+//                     {"inv." + item, -amount},
+//                     {"bal", amt}
+//                 }
+//             }});
+//          if (evt.status == 200) {
+//             ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {} coins from the bag.", amount, shop_items[item]["display"].get<std::string>(), amt)));
+//         } else {
+//             ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+//             ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+//         }
+//     } else if (item == "beef") {
+//         auto evt = co_await ctx.maindb.patch(
+//             user_id,
+//             {{"increment",
+//                 {
+//                     {"inv." + item, -amount},
+//                     {"multi", amount}
+//                 }
+//             }});
+//         if (evt.status == 200) {
+//             ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier for 1 minute.", amount, shop_items[item]["display"].get<std::string>(), amount)));
+//             co_await ctx.bot.co_timer(60);
+//             ctx.maindb.patch(
+//                 user_id,
+//                 {{"increment",
+//                     {
+//                         {"multi", -amount}
+//                     }
+//                 }});
+//             // lucky bastard if this request failed
+//         } else {
+//             ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+//             ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+//         }
+//     } else if (item == "cursed_beef") {
+//         std::random_device rd;
+// 		std::mt19937 gen(rd());
+// 		std::uniform_int_distribution<> distr(1, 10);
+//         // it's actually 30% backfiring, we are going to say 40% to make it more intense
+//         if (distr(gen) < 4) {
+//             auto evt = co_await ctx.maindb.patch(
+//                 user_id,
+//                 {{"increment",
+//                     {
+//                         {"inv." + item, -1},
+//                     }
+//                 }});
+//              if (evt.status == 200) {
+//                 ev.edit_response("Ughhh!! Your balls are too itchy and you dropped your beef! Good luck next time.");
+//             } else {
+//                 ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+//                 ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+//             }
+//         }
+//         ev.edit_response(
+//             dpp::message("Who would you like to curse?").set_flags(dpp::m_ephemeral).add_component(
+//                 dpp::component().add_component(
+//                     dpp::component().set_placeholder("Select who to curse").
+//                         set_type(dpp::cot_user_selectmenu).
+//                         set_id("curse_1")
+//                 )
+//             )
+//         );
+//         co_return;
+//     }
+//     // horrose_celery is no longer usable starting from July 21st 2023
+//     // } else if (item == "horrorse_celery") {
+//     //     return ctx.maindb.patch(
+//     //         user_id,
+//     //         {{"increment",
+//     //             {
+//     //                 {"inv." + item, -amount},
+//     //                 {"multi", amount*100}
+//     //             }
+//     //         }},
+//     //         [ctx, ev, amount, item, user_id](const dpp::http_request_completion_t &evt) {
+//     //             if (evt.status == 200) {
+//     //                 ev.edit_response(ephmsg(fmt::format("Used {} of {}, and got {}% multiplier PERMANENTLY.", amount*100, shop_items[item]["display"].get<std::string>(), amount)));
+//     //             } else {
+//     //                 ctx.cooldowns.reset_trigger(ev.command.usr.id, "use");
+//     //                 ev.edit_response(ephmsg("Something went wrong while using your item, try again later."));
+//     //             }
+//     //         });
+//     co_return;
+// }
 
-    }
-    ev.edit_response(ephmsg("ok"));
-}
+// What
+
 #endif
